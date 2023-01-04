@@ -14,7 +14,7 @@ class HierarchicalClustering:
         self,
         word_embedding,
         list_of_vectors,
-        starting_index: int,
+        chosen_indices: set,
         initial_proximity: float = 3.0,
         proximity_reduc: float = 0.5,
         initial_proximity_inc: float = 2.0,
@@ -23,7 +23,7 @@ class HierarchicalClustering:
         # set word embedding & vectors
         self.word_embedding = word_embedding
         self.list_of_vectors = list_of_vectors
-        self.starting_index = starting_index
+        self.chosen_indices = chosen_indices
         self.n_vectors = len(list_of_vectors)
 
         # set proximity constants
@@ -37,7 +37,7 @@ class HierarchicalClustering:
         # given `list_of_vectors`
         self.set_distance_matrix_and_vectors()
 
-    def set_distance_matrix_and_vectors(self, list_of_vectors=None, starting_index=None):
+    def set_distance_matrix_and_vectors(self, list_of_vectors=None, chosen_indices=None):
         """
         Sets the `distance_matrix` of all vectors to each other.
         If a new `list_of_vectors` is provided, then it is updated and
@@ -45,11 +45,11 @@ class HierarchicalClustering:
         """
 
         if list_of_vectors is not None:
-            if starting_index is None:
+            if chosen_indices is None:
                 raise ValueError(f"When setting the list_of_vectors, please provide the \
-                    starting_index in the word_embedding, even if it's 0.")
+                    chosen_indices in the word_embedding, even if it's all.")
             self.list_of_vectors = list_of_vectors
-            self.starting_index = starting_index
+            self.chosen_indices = chosen_indices
 
         self.distance_matrix = np.zeros((self.n_vectors, self.n_vectors))
 
@@ -172,8 +172,9 @@ class HierarchicalClustering:
         list_of_hierarchical_levels = []
         list_of_hierarchical_levels_w = []
 
-        used = set()
-        not_used = set(range(self.n_vectors))
+        not_used = set(self.chosen_indices)
+        used = set(range(self.n_vectors)).difference(not_used)
+        print(f"Starting with the {len(used)} used and {len(not_used)} not used indices.")
 
         level_initial_proximity = self.initial_proximity
 
@@ -217,10 +218,10 @@ class HierarchicalClustering:
 
                 hierarchical_level[new_main_head] = main_proximity_elements
                 hierarchical_level_w[
-                    self.word_embedding.index_to_key[self.starting_index + new_main_head]
+                    self.word_embedding.index_to_key[new_main_head]
                 ] = set(
                     [
-                        self.word_embedding.index_to_key[self.starting_index + el]
+                        self.word_embedding.index_to_key[el]
                         for el in main_proximity_elements
                     ]
                 )
