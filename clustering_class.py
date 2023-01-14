@@ -2,6 +2,9 @@ import random
 import numpy as np
 import copy
 
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+
 random.seed(1)
 
 
@@ -138,8 +141,8 @@ class HierarchicalClustering:
 
         not_used_relevance = {}
 
-        if self.verbose:
-            print(f"--- Starting to sort not used of length {len(not_used_indices)}.")
+        # if self.verbose:
+        #     print(f"--- Starting to sort not used of length {len(not_used_indices)}.")
 
         for element in not_used_indices:
             element_proximity_spread, _, _ = self.proximity_spread(
@@ -151,8 +154,8 @@ class HierarchicalClustering:
 
             not_used_relevance[element] = element_proximity_spread
 
-        if self.verbose:
-            print(f"--- Finished sorting not used!")
+        #if self.verbose:
+            #print(f"--- Finished sorting not used!")
 
         return {
             k: v
@@ -191,16 +194,17 @@ class HierarchicalClustering:
             hierarchical_level = {}
             hierarchical_level_w = {}
 
-            sorted_not_used_relevance = self.get_sorted_not_used_by_relevance(
-                used=used,
-                not_used=not_used,
-                level_initial_proximity=level_initial_proximity,
-            )
-
-            sorted_not_used_list = list(sorted_not_used_relevance.keys())
 
             # iterate over heads
             while True:
+
+                sorted_not_used_relevance = self.get_sorted_not_used_by_relevance(
+                    used=used,
+                    not_used=not_used,
+                    level_initial_proximity=level_initial_proximity,
+                )
+
+                sorted_not_used_list = list(sorted_not_used_relevance.keys())
 
                 new_main_head = sorted_not_used_list.pop(0)
                 not_used.remove(new_main_head)
@@ -209,6 +213,9 @@ class HierarchicalClustering:
                 main_proximity_elements = sorted_not_used_relevance[
                     new_main_head
                 ].difference(used)
+                
+                if self.verbose:
+                    print(f"--- Finished sorting: len(not_used)={len(not_used)}, new_proximity_size = {len(main_proximity_elements)}")
 
                 used = used.union(main_proximity_elements)
                 not_used = not_used.difference(main_proximity_elements)
@@ -233,6 +240,7 @@ class HierarchicalClustering:
 
             last_level_heads = set(list_of_hierarchical_levels[-1].keys())
 
+            self.visualize_hierarchical_level(reduced_vectors, last_level_heads, list_of_hierarchical_levels[-1].values())
             # break if there was only one last level head
             if self.verbose and len(last_level_heads) == 1:
                 print("Hierarchical clustering finished!")
@@ -326,3 +334,58 @@ class HierarchicalClustering:
             not_used = last_level_heads
 
         return list_of_hierarchical_levels, list_of_hierarchical_levels_w
+
+    def visualize_hierarchical_level(self, vectors_to_visualize, heads, children):
+        pca_alg = PCA(n_components=2)
+
+        pc = pca_alg.fit_transform(vectors_to_visualize)
+
+        head_pc = [pc[i] for i in heads]
+        children_pc = [pc[i] for i in children]
+
+        #ax = fig.add_subplot(projection = '3d')
+        plt.scatter(head_pc[:,0], head_pc[:,1], marker='s', color='r')
+        plt.scatter(children_pc[:,0], children_pc[:,1])
+        plt.show()        
+
+import gensim
+import gensim.downloader
+import spacy
+import nltk
+
+glove_vectors = gensim.downloader.load('glove-wiki-gigaword-50')
+
+
+from nltk.corpus import wordnet as wn
+wordnet_chosen_words=[]
+for word in glove_vectors.index_to_key[90:5000]:
+    tmp = wn.synsets(word)
+    if len([t.pos() for t in tmp if t.pos()=='n'])>=1:
+        wordnet_chosen_words.append(word)
+
+wordnet_chosen_indices = set([glove_vectors.key_to_index[word] for word in wordnet_chosen_words])
+
+vocab_size = 5000
+
+proximity_const = 1
+reducing_coef_const = 0.7
+increasing_proximity_const = 0.2
+
+# normed vectors
+reduced_vectors = glove_vectors.get_normed_vectors()[:vocab_size]
+
+hierarchical_clustering = HierarchicalClustering(
+    word_embedding=glove_vectors,
+    list_of_vectors=reduced_vectors,
+    chosen_indices=wordnet_chosen_indices,
+    initial_proximity=proximity_const,
+    proximity_reduc=reducing_coef_const,
+    initial_proximity_inc=increasing_proximity_const,
+    verbose=True
+)
+
+
+better_hier_list, better_hier_list_w = hierarchical_clustering.get_better_list_of_hierarchical_orders()
+
+# chosen_words = np.asarray([reduced_vectors[i] for i in wordnet_chosen_indices])
+# hierarchical_clustering.visualize_vectors(chosen_words)
