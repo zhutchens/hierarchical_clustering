@@ -8,6 +8,7 @@ from preprocessing import (
 def get_directed_relations(
     top_n_words,
     all_verses,
+    top_n_words_gender_dictionary: dict = None,
     verbose=False,
 ):
     """Extracts directed relations of given words from given corpus.
@@ -33,7 +34,8 @@ def get_directed_relations(
     subjects = {}
     objects = {}
 
-    top_30_gender_dictionary = get_top_30_gender_dictionary()
+    if top_n_words_gender_dictionary is None:
+        top_n_words_gender_dictionary = get_top_30_gender_dictionary()
 
     directed_relations = set()
 
@@ -58,7 +60,7 @@ def get_directed_relations(
             sentence_subjects_non_pronouns = [
                 token for token in sent if token.dep_ in ["nsubj", "nsubjpass"] 
                 and token.text.lower() not in pronouns 
-                and token.text.lower() in top_30_gender_dictionary.keys()
+                and token.text.lower() in top_n_words_gender_dictionary.keys()
             ]
             for root in sentence_verbs:
                 conjunct_subject = None
@@ -112,9 +114,9 @@ def get_directed_relations(
                         subject for subject in sentence_subjects_non_pronouns
                         if subject.i < current_subject.i
                     ][::-1]
-                    if len([subject for subject in filtered_subjects_for_pronoun if child_gender==top_30_gender_dictionary[subject.text.lower()]]) > 0:
+                    if len([subject for subject in filtered_subjects_for_pronoun if child_gender==top_n_words_gender_dictionary[subject.text.lower()]]) > 0:
                         old_subject = current_subject
-                        current_subject = [subject for subject in filtered_subjects_for_pronoun if child_gender==top_30_gender_dictionary[subject.text.lower()]][0]
+                        current_subject = [subject for subject in filtered_subjects_for_pronoun if child_gender==top_n_words_gender_dictionary[subject.text.lower()]][0]
                         if verbose:
                             print("subject", current_subject.text, "replaced with: ", old_subject.text)
                 subject_text = current_subject.text
