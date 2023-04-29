@@ -251,6 +251,16 @@ def order_directed_relations(
 
     # Order the relations with respect to the first words.
     ordered_directed_relations.sort(key=lambda x: first_words.index(x[0]), reverse=False)
+
+    # If there are two relations with same words, keep only the one first in the list.
+    for (first, second) in ordered_directed_relations:
+        if (second, first) in ordered_directed_relations and \
+            ordered_directed_relations.index((second, first)) > ordered_directed_relations.index((first, second)):
+            ordered_directed_relations.remove((second, first))
+
+    first_words.sort(key=lambda x: tf_idf_of_words[x], reverse=True)
+    ordered_directed_relations.sort(key=lambda x: first_words.index(x[0]), reverse=False)
+
     return ordered_directed_relations
 
 
