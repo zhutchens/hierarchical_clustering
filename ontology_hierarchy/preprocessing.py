@@ -1,12 +1,10 @@
-import random
-import numpy as np
-import pandas as pd
-import nltk
 import math
 import re
-import copy
-
 from typing import Optional
+
+import nltk
+import numpy as np
+import pandas as pd
 
 
 def preprocess_kjv(
@@ -14,14 +12,14 @@ def preprocess_kjv(
     get_book: Optional[str] = None,
 ):
     """Preprocess the King James Version of the Bible.
-    
+
     Parameters
     ----------
     path_to_kjv : str
         Path to the King James Version of the Bible.
     get_book : Optional[str]
         If specified, also returns the book of the Bible specified.
-    
+
     Returns
     -------
     return_dictionary : dict
@@ -107,7 +105,7 @@ def preprocess_kjv(
     if get_book is not None:
         book = df[df.book == get_book]
         return df, book
-    
+
     return df
 
 
@@ -409,7 +407,7 @@ def get_word_types_with_tf_idf(
 
     if exclude_set:
         print("Excluding words with the following word types: {}".format(exclude_set))
-        # Exclude words if the frequency of the word type from exclude_set is 
+        # Exclude words if the frequency of the word type from exclude_set is
         # greater than 10% of the total word types of that word
         tf_idf_word_types = tf_idf_word_types[
             tf_idf_word_types["word_type"].apply(
@@ -427,7 +425,6 @@ def get_word_types_with_tf_idf(
         #     )
         # ]
 
-
     new_column_order = ["word", "word_type", "tc", "tf", "dc", "idf", "tf_idf"]
     tf_idf_word_types = tf_idf_word_types[new_column_order]
 
@@ -435,9 +432,10 @@ def get_word_types_with_tf_idf(
 
     return tf_idf_word_types
 
+
 def get_top_30_gender_number_dictionary():
     """Get a dictionary of the top 30 words (tf_idf) and their gender and number.
-    
+
     Used in the relation extraction (spacy dependency tree parsing) algorithm
     when connecting pronouns to subjects (e.g. "he" to "Joseph"). For correctness,
     it's better to know the gender and number of the subject.
@@ -446,13 +444,40 @@ def get_top_30_gender_number_dictionary():
     -------
     dict
     """
-    # TODO: Currently manually created. Parsers do not know how to get Gender of 
+    # TODO: Currently manually created. Parsers do not know how to get Gender of
     # entities like Joseph and Jacob. Need to figure out how to automate this.
-    top_30_words = ['joseph', 'jacob', 'abraham', 'pharaoh', 'esau', 'duke', 'abram',
-        'master', 'isaac', 'sons', 'laban', 'years', 'noah', 'rachel',
-        'earth', 'father', 'egypt', 'daughters', 'waters', 'brethren',
-        'brother', 'son', 'lot', 'sarah', 'abimelech', 'dream', 'daughter',
-        'ark', 'god', 'king']
+    top_30_words = [
+        "joseph",
+        "jacob",
+        "abraham",
+        "pharaoh",
+        "esau",
+        "duke",
+        "abram",
+        "master",
+        "isaac",
+        "sons",
+        "laban",
+        "years",
+        "noah",
+        "rachel",
+        "earth",
+        "father",
+        "egypt",
+        "daughters",
+        "waters",
+        "brethren",
+        "brother",
+        "son",
+        "lot",
+        "sarah",
+        "abimelech",
+        "dream",
+        "daughter",
+        "ark",
+        "god",
+        "king",
+    ]
     top_30_words_genders = [
         "Masc",
         "Masc",
@@ -519,8 +544,9 @@ def get_top_30_gender_number_dictionary():
         "Sing",
     ]
 
-
     # Create a top_30_gender_number_dictionary
-    top_30_gender_number_dictionary = dict(zip(top_30_words, zip(top_30_words_genders, top_30_words_numbers)))
+    top_30_gender_number_dictionary = dict(
+        zip(top_30_words, zip(top_30_words_genders, top_30_words_numbers))
+    )
 
     return top_30_gender_number_dictionary
