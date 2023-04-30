@@ -2,7 +2,7 @@ import spacy
 import pandas as pd
 
 from preprocessing import (
-    get_top_30_gender_dictionary,
+    get_top_30_gender_number_dictionary,
 )
 
 def get_directed_relations(
@@ -35,7 +35,7 @@ def get_directed_relations(
     objects = {}
 
     if top_n_words_gender_dictionary is None:
-        top_n_words_gender_dictionary = get_top_30_gender_dictionary()
+        top_n_words_gender_dictionary = get_top_30_gender_number_dictionary()
 
     directed_relations = set()
 
@@ -108,21 +108,29 @@ def get_directed_relations(
                 # from the sentence.
                 if current_subject.text.lower() in pronouns:
                     child_gender = current_subject.morph.get('Gender')[0] if len(current_subject.morph.get('Gender'))>0 else "Neut"
+                    child_number = current_subject.morph.get('Number')[0] if len(current_subject.morph.get('Number'))>0 else None
                     # Take the subjects from sentence_subjects_non_pronouns that occured before the pronoun
                     # and order them opposite to the order of the sentence.
                     filtered_subjects_for_pronoun = [
                         subject for subject in sentence_subjects_non_pronouns
                         if subject.i < current_subject.i
                     ][::-1]
-                    if len([subject for subject in filtered_subjects_for_pronoun if child_gender==top_n_words_gender_dictionary[subject.text.lower()]]) > 0:
+                    subjects_with_same_gender_and_number = [subject for subject in filtered_subjects_for_pronoun 
+                                                          if child_gender==top_n_words_gender_dictionary[subject.text.lower()][0] 
+                                                          and child_number==top_n_words_gender_dictionary[subject.text.lower()][1]]
+                    if len(subjects_with_same_gender_and_number) > 0:
                         old_subject = current_subject
-                        current_subject = [subject for subject in filtered_subjects_for_pronoun if child_gender==top_n_words_gender_dictionary[subject.text.lower()]][0]
+                        current_subject = subjects_with_same_gender_and_number[0]
                         if verbose:
-                            print("subject", current_subject.text, "replaced with: ", old_subject.text)
+                            print("pronoun ", old_subject.text, "replaced with subject: ", current_subject.text)
                 subject_text = current_subject.text
 
+                # Start searching for objects.
                 for child in root.children:
+                    # Search for indirect objects through the dative dependency.
                     if child.dep_ in ["dative"]:
+                        if verbose:
+                            print("dative: ", child.text)
                         for grandchild in child.children:
                             if grandchild.dep_ in ["pobj"]:
                                 if verbose:
@@ -137,6 +145,7 @@ def get_directed_relations(
                                     directed_relations.add((subject_text.lower(), grandchild.text.lower()))
                                 subject_object_in_top_n_words += int(grandchild.text.lower() in top_n_words and subject_text.lower() in top_n_words)
 
+                    # Search for indirect objects through the prep dependency.
                     if child.dep_ in ["prep"]:
                         for grandchild in child.children:
                             if grandchild.dep_ in ["pobj"]:
@@ -152,6 +161,7 @@ def get_directed_relations(
                                     directed_relations.add((subject_text.lower(), grandchild.text.lower()))
                                 subject_object_in_top_n_words += int(grandchild.text.lower() in top_n_words and subject_text.lower() in top_n_words)
 
+                    # Search for direct objects through the dobj and pobj dependencies.
                     if child.dep_ in ["dobj", "pobj"]:
                         if verbose:
                             print("object: ", child.text)
@@ -179,6 +189,7 @@ def get_directed_relations(
                                     directed_relations.add((subject_text.lower(), grandchild.text.lower()))
                                 subject_object_in_top_n_words += int(grandchild.text.lower() in top_n_words and subject_text.lower() in top_n_words)
                             
+                            # Continue searching for objects through the prep dependency.
                             if grandchild.dep_ in ["prep"]:
                                 for great_grandchild in grandchild.children:
                                     if great_grandchild.dep_ in ["pobj"]:
@@ -208,6 +219,10 @@ def get_directed_relations(
 
     # Fill NaN values with 0.
     subjects_objects_df = subjects_objects_df.fillna(0)
+    # TODO I don't return this dataframe, it was here mostly for debugging purposes.
+    # Can be removed later.
+
+    
     if verbose:
         print(subject_object_in_top_n_words, " of the subjects and objects were in the top 30 words.")
 

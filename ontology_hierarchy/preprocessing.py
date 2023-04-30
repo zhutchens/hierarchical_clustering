@@ -435,7 +435,19 @@ def get_word_types_with_tf_idf(
 
     return tf_idf_word_types
 
-def get_top_30_gender_dictionary():
+def get_top_30_gender_number_dictionary():
+    """Get a dictionary of the top 30 words (tf_idf) and their gender and number.
+    
+    Used in the relation extraction (spacy dependency tree parsing) algorithm
+    when connecting pronouns to subjects (e.g. "he" to "Joseph"). For correctness,
+    it's better to know the gender and number of the subject.
+
+    Returns
+    -------
+    dict
+    """
+    # TODO: Currently manually created. Parsers do not know how to get Gender of 
+    # entities like Joseph and Jacob. Need to figure out how to automate this.
     top_30_words = ['joseph', 'jacob', 'abraham', 'pharaoh', 'esau', 'duke', 'abram',
         'master', 'isaac', 'sons', 'laban', 'years', 'noah', 'rachel',
         'earth', 'father', 'egypt', 'daughters', 'waters', 'brethren',
@@ -473,7 +485,42 @@ def get_top_30_gender_dictionary():
         "Masc",
         "Masc",
     ]
+    # Add the Number (Sing or Plur) of the top_30_words
+    top_30_words_numbers = [
+        "Sing",
+        "Sing",
+        "Sing",
+        "Sing",
+        "Sing",
+        "Sing",
+        "Sing",
+        "Sing",
+        "Sing",
+        "Plur",
+        "Sing",
+        "Plur",
+        "Plur",
+        "Plur",
+        "Sing",
+        "Sing",
+        "Sing",
+        "Plur",
+        "Plur",
+        "Plur",
+        "Sing",
+        "Sing",
+        "Sing",
+        "Sing",
+        "Sing",
+        "Sing",
+        "Sing",
+        "Sing",
+        "Sing",
+        "Sing",
+    ]
 
-    # Create a top_30_gender_dictionary
-    top_30_gender_dictionary = dict(zip(top_30_words, top_30_words_genders))
-    return top_30_gender_dictionary
+
+    # Create a top_30_gender_number_dictionary
+    top_30_gender_number_dictionary = dict(zip(top_30_words, zip(top_30_words_genders, top_30_words_numbers)))
+
+    return top_30_gender_number_dictionary
