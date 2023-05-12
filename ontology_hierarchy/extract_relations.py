@@ -359,6 +359,7 @@ def get_directed_relations(
 def order_directed_relations(
     directed_relations: set,
     tf_idf_pre_filtering: pd.DataFrame,
+    order_by: str = "tf_idf",
 ):
     """Order the directed relations with respect to the number of relations and the tf_idf of the first word of the relation.
 
@@ -368,6 +369,8 @@ def order_directed_relations(
         Set of directed relations.
     tf_idf_pre_filtering : pd.DataFrame
         Dataframe with columns words and tf_idf.
+    order_by : str, optional
+        The metric to order the relations by. Can be "tf_idf", "number_of_relations" or "product." By default "tf_idf".
 
     Returns
     -------
@@ -418,7 +421,15 @@ def order_directed_relations(
         ):
             ordered_directed_relations.remove((second, first))
 
-    first_words.sort(key=lambda x: tf_idf_of_words[x], reverse=True)
+    if order_by == "tf_idf":
+        first_words.sort(key=lambda x: tf_idf_of_words[x], reverse=True)
+    elif order_by == "number_of_relations":
+        first_words.sort(key=lambda x: number_of_relations[x], reverse=True)
+    elif order_by == "product":
+        first_words.sort(
+            key=lambda x: number_of_relations[x] * tf_idf_of_words[x], reverse=True
+        )
+
     ordered_directed_relations.sort(
         key=lambda x: first_words.index(x[0]), reverse=False
     )

@@ -5,6 +5,7 @@ from typing import Optional
 import nltk
 import numpy as np
 import pandas as pd
+from collections import Counter
 
 
 def preprocess_kjv(
@@ -108,6 +109,62 @@ def preprocess_kjv(
 
     return df
 
+# make a better get_tf using Counter from collections
+def better_get_tf_for_documents(documents, sortby="tf", skip_stopwords: bool = False):
+    """Get the term frequency for each word in a list of documents.
+
+    Much faster version of the same function. Uses Counter from collections.
+    
+    Parameters
+    ----------
+    verses : list
+        A list of verses.
+    sortby : str, optional
+        The column to sort by, by default 'tf'. Can be chosen from ['word', 'tc', 'tf'].
+    skip_stopwords : bool, optional
+        Whether to skip stopwords, by default False.
+    
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with the term frequency for each word in the documents.
+    """
+    tf = pd.DataFrame(columns=["word", "tc", "tf"])
+
+    if skip_stopwords:
+        from nltk.corpus import stopwords
+
+        stopwords_set = set(stopwords.words("english"))
+    else:
+        stopwords_set = set()
+
+    # Combine all documents into one string
+    all_documents = " ".join(documents)
+
+    # Get n_words
+    n_words = len(re.findall(r"\w+", all_documents))
+
+    # Get word counts
+    word_counts = Counter(re.findall(r"\w+", all_documents))
+
+    for word in word_counts:
+        word_lower = word.lower()
+        if word_lower not in tf["word"].values and word_lower not in stopwords_set:
+            row = {}
+            row["word"] = [word_lower]
+            row["tf"] = [word_counts[word] / n_words]
+            row["tc"] = word_counts[word]
+            row_df = pd.DataFrame(row)
+            tf = pd.concat([tf, row_df], ignore_index=True)
+        elif word_lower not in stopwords_set:
+            tf.loc[tf.word.isin([word_lower]), "tf"] += word_counts[word] / n_words
+            tf.loc[tf.word.isin([word_lower]), "tc"] += word_counts[word]
+        
+
+    tf = tf.sort_values(by=sortby, ascending=False)
+    tf = tf.reset_index(drop=True)
+    return tf
+
 
 def get_tf_for_documents(documents, sortby="tf", skip_stopwords: bool = False):
     """Get the term frequency for each word in a list of documents.
@@ -152,7 +209,7 @@ def get_tf_for_documents(documents, sortby="tf", skip_stopwords: bool = False):
                 row["tc"] = 1
                 row_df = pd.DataFrame(row)
                 tf = pd.concat([tf, row_df], ignore_index=True)
-            else:
+            elif word not in stopwords_set:
                 tf.loc[tf.word.isin([word]), "tf"] += 1 / n_words
                 tf.loc[tf.word.isin([word]), "tc"] += 1
 
@@ -238,7 +295,7 @@ def get_tf_idf_for_documents(documents, sort_by="tf", skip_stopwords: bool = Fal
         A DataFrame with the tf-idf for each word in the documents.
     """
 
-    tf = get_tf_for_documents(documents, sortby="word", skip_stopwords=skip_stopwords)
+    tf = better_get_tf_for_documents(documents, sortby="word", skip_stopwords=skip_stopwords)
     tf = tf.reset_index(drop=True)
     idf = get_idf_for_documents(documents, sortby="word", skip_stopwords=skip_stopwords)
     idf = idf.reset_index(drop=True)
