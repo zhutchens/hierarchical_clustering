@@ -68,6 +68,20 @@ def get_directed_relations(
         "theirs",
     ]
 
+    negative_determiners = [
+        'no',
+        'not',
+        'none',
+        'nobody',
+        'nothing',
+        'neither',
+        'nowhere',
+        'never',
+        'hardly',
+        'scarcely',
+        'barely',
+    ]
+
     for verse_idx, verse in enumerate(all_verses):
         doc = nlp(verse)
         doc_sents = [s for s in doc.sents]
@@ -121,8 +135,8 @@ def get_directed_relations(
                 # NOT USING, TOO STRONG, MAYBE USE LATER WITH NUMBER OF RELATIONS TODO
                 # HMMMMM no, actually it seems fine. There was another bug...
 
-                # Check that there is a subject and an object.
-                if (
+                # If there is no conjunct subject, check that there is a subject and an object.
+                if not conjunct_subject and (
                     len(
                         [
                             child
@@ -154,12 +168,20 @@ def get_directed_relations(
                             subjects[child.text] = 1
                         current_subject = child
 
-                # If there is a conjunct subject, use that as the subject. NOT USING, SEE UP TODO
+                # If there is a conjunct subject, use that as the subject. NOT USING, SEE UP TODO (fake news)
                 if conjunct_subject is not None and current_subject is None:
                     if verbose:
                         print("Using conjunct subject: ", conjunct_subject.text)
                     current_subject = conjunct_subject
                     subject_text = conjunct_subject.text
+
+                subject_negative_determiner = False
+                # Look for negative determiner dependencies in the subject.
+                for child in current_subject.children:
+                    if child.dep_ in ["det"] and child.text.lower() in negative_determiners:
+                        if verbose:
+                            print("Negative determiner: ", child.text, ". Inverting order of relation.")
+                        subject_negative_determiner = True
 
                 # Check if subject is a pronoun.
                 # If it is, replace with a non-pronoun subject
@@ -223,9 +245,16 @@ def get_directed_relations(
                                 ):
                                     # if subject.pos_ in noun_pos and grandchild.pos_ in noun_pos:
                                     # print((subject.lower(), grandchild.text.lower()))
-                                    directed_relations.add(
-                                        (subject_text.lower(), grandchild.text.lower())
+                                    add_directed_relation(
+                                        directed_relations,
+                                        subject_text.lower(),
+                                        grandchild.text.lower(),
+                                        subject_negative_determiner,
+                                        verbose=verbose,
                                     )
+                                    # directed_relations.add(
+                                    #     (subject_text.lower(), grandchild.text.lower())
+                                    # )
                                 subject_object_in_top_n_words += int(
                                     grandchild.text.lower() in top_n_words
                                     and subject_text.lower() in top_n_words
@@ -248,9 +277,16 @@ def get_directed_relations(
                                 ):
                                     # if subject.pos_ in noun_pos and grandchild.pos_ in noun_pos:
                                     # print((subject.lower(), grandchild.text.lower()))
-                                    directed_relations.add(
-                                        (subject_text.lower(), grandchild.text.lower())
+                                    add_directed_relation(
+                                        directed_relations,
+                                        subject_text.lower(),
+                                        grandchild.text.lower(),
+                                        subject_negative_determiner,
+                                        verbose=verbose,
                                     )
+                                    # directed_relations.add(
+                                    #     (subject_text.lower(), grandchild.text.lower())
+                                    # )
                                 subject_object_in_top_n_words += int(
                                     grandchild.text.lower() in top_n_words
                                     and subject_text.lower() in top_n_words
@@ -271,9 +307,16 @@ def get_directed_relations(
                         ):
                             # if subject.pos_ in noun_pos and child.pos_ in noun_pos:
                             # print((subject.lower(), child.text.lower()))
-                            directed_relations.add(
-                                (subject_text.lower(), child.text.lower())
+                            add_directed_relation(
+                                directed_relations,
+                                subject_text.lower(),
+                                child.text.lower(),
+                                subject_negative_determiner,
+                                verbose=verbose,
                             )
+                            # directed_relations.add(
+                            #     (subject_text.lower(), child.text.lower())
+                            # )
                         subject_object_in_top_n_words += int(
                             child.text.lower() in top_n_words
                             and subject_text.lower() in top_n_words
@@ -294,9 +337,16 @@ def get_directed_relations(
                                 ):
                                     # if subject.pos_ in noun_pos and grandchild.pos_ in noun_pos:
                                     # print((subject.lower(), grandchild.text.lower()))
-                                    directed_relations.add(
-                                        (subject_text.lower(), grandchild.text.lower())
+                                    add_directed_relation(
+                                        directed_relations,
+                                        subject_text.lower(),
+                                        grandchild.text.lower(),
+                                        subject_negative_determiner,
+                                        verbose=verbose,
                                     )
+                                    # directed_relations.add(
+                                    #     (subject_text.lower(), grandchild.text.lower())
+                                    # )
                                 subject_object_in_top_n_words += int(
                                     grandchild.text.lower() in top_n_words
                                     and subject_text.lower() in top_n_words
@@ -320,12 +370,19 @@ def get_directed_relations(
                                         ):
                                             # if subject.pos_ in noun_pos and great_grandchild.pos_ in noun_pos:
                                             # print((subject.lower(), great_grandchild.text.lower()))
-                                            directed_relations.add(
-                                                (
-                                                    subject_text.lower(),
-                                                    great_grandchild.text.lower(),
-                                                )
+                                            add_directed_relation(
+                                                directed_relations,
+                                                subject_text.lower(),
+                                                great_grandchild.text.lower(),
+                                                subject_negative_determiner,
+                                                verbose=verbose,
                                             )
+                                            # directed_relations.add(
+                                            #     (
+                                            #         subject_text.lower(),
+                                            #         great_grandchild.text.lower(),
+                                            #     )
+                                            # )
                                         subject_object_in_top_n_words += int(
                                             great_grandchild.text.lower() in top_n_words
                                             and subject_text.lower() in top_n_words
@@ -355,6 +412,37 @@ def get_directed_relations(
 
     return directed_relations
 
+def add_directed_relation(
+    directed_relations: set,
+    subject: str,
+    object: str,
+    subject_negative_determiner: bool = False,
+    #object_negative_determiner: bool = False,
+    #verb_negative_determiner: bool = False,
+    verbose: bool = False,
+):
+    """Adds a directed relation to the set of directed relations.
+
+    Parameters
+    ----------
+    directed_relations : set
+        Set of directed relations.
+    subject : str
+        Subject of the relation.
+    object : str
+        Object of the relation.
+    subject_negative_determiner : bool, optional
+        Whether the subject has a negative determiner, by default False
+    """
+    if subject_negative_determiner:
+        directed_relations.add((object, subject))
+        if verbose:
+            print("added relation: ", (object, subject))
+    else:
+        directed_relations.add((subject, object))
+        if verbose:
+            print("added relation: ", (subject, object))
+
 
 def order_directed_relations(
     directed_relations: set,
@@ -370,7 +458,7 @@ def order_directed_relations(
     tf_idf_pre_filtering : pd.DataFrame
         Dataframe with columns words and tf_idf.
     order_by : str, optional
-        The metric to order the relations by. Can be "tf_idf", "number_of_relations" or "product." By default "tf_idf".
+        The metric to order the relations by. Can be "tf", "tf_idf", "number_of_relations" or "product." By default "tf_idf".
 
     Returns
     -------
@@ -399,10 +487,22 @@ def order_directed_relations(
             tf_idf_pre_filtering["word"] == word
         ]["tf_idf"].values[0]
 
+    # Get tf from the dataframe tf_idf_pre_filtering with columns words and tf.
+    tf_of_words = {}
+    for word in first_words:
+        tf_of_words[word] = tf_idf_pre_filtering[
+            tf_idf_pre_filtering["word"] == word
+        ]["tf"].values[0]
+
     # Order the first words with respect to the number of relations and the tf_idf.
-    first_words.sort(
-        key=lambda x: number_of_relations[x] * tf_idf_of_words[x], reverse=True
-    )
+    if not order_by == "tf":
+        first_words.sort(
+            key=lambda x: number_of_relations[x] * tf_idf_of_words[x], reverse=True
+        )
+    else:
+        first_words.sort(
+            key=lambda x: number_of_relations[x] * tf_of_words[x], reverse=True
+        )
 
     # Order the relations with respect to the first words.
     ordered_directed_relations.sort(
@@ -421,13 +521,15 @@ def order_directed_relations(
         ):
             ordered_directed_relations.remove((second, first))
 
+    if order_by == "tf":
+        first_words.sort(key=lambda x: tf_of_words[x], reverse=True)
     if order_by == "tf_idf":
         first_words.sort(key=lambda x: tf_idf_of_words[x], reverse=True)
     elif order_by == "number_of_relations":
         first_words.sort(key=lambda x: number_of_relations[x], reverse=True)
     elif order_by == "product":
         first_words.sort(
-            key=lambda x: number_of_relations[x] * tf_idf_of_words[x], reverse=True
+            key=lambda x: number_of_relations[x] * tf_of_words[x], reverse=True
         )
 
     ordered_directed_relations.sort(
