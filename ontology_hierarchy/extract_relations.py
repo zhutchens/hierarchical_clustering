@@ -36,9 +36,9 @@ def get_directed_relations(
     if top_n_words_gender_dictionary is None:
         top_n_words_gender_dictionary = get_top_30_gender_number_dictionary()
 
-    directed_relations = set()
+    directed_relations = {}
 
-    subject_object_in_top_n_words = 0
+    n_extracted_relations = 0
 
     noun_pos = ["NOUN", "PROPN"]
 
@@ -87,6 +87,8 @@ def get_directed_relations(
         doc_sents = [s for s in doc.sents]
         if verbose:
             print("\n", len(doc_sents), " sentences in verse ", verse_idx)
+        if verse_idx==640:
+            breakpoint()
         for sent in doc_sents:
             if verbose:
                 print("sentence: ", sent.text)
@@ -115,14 +117,6 @@ def get_directed_relations(
                         ]
                     )
                     == 0
-                    and len(
-                        [
-                            child
-                            for child in root.children
-                            if child.dep_ in ["dobj", "pobj"]
-                        ]
-                    )
-                    > 0
                 ):
                     if root.dep_ == "conj":
                         root_head = root.head
@@ -132,29 +126,6 @@ def get_directed_relations(
                                 break
                     if conjunct_subject is None:
                         continue
-                # NOT USING, TOO STRONG, MAYBE USE LATER WITH NUMBER OF RELATIONS TODO
-                # HMMMMM no, actually it seems fine. There was another bug...
-
-                # If there is no conjunct subject, check that there is a subject and an object.
-                if not conjunct_subject and (
-                    len(
-                        [
-                            child
-                            for child in root.children
-                            if child.dep_ in ["nsubj", "nsubjpass"]
-                        ]
-                    )
-                    == 0
-                    or len(
-                        [
-                            child
-                            for child in root.children
-                            if child.dep_ in ["dobj", "pobj"]
-                        ]
-                    )
-                    == 0
-                ):
-                    continue
 
                 current_subject = None
                 # Iterate over the verb children to find the subject.
@@ -168,7 +139,6 @@ def get_directed_relations(
                             subjects[child.text] = 1
                         current_subject = child
 
-                # If there is a conjunct subject, use that as the subject. NOT USING, SEE UP TODO (fake news)
                 if conjunct_subject is not None and current_subject is None:
                     if verbose:
                         print("Using conjunct subject: ", conjunct_subject.text)
@@ -252,13 +222,10 @@ def get_directed_relations(
                                         subject_negative_determiner,
                                         verbose=verbose,
                                     )
+                                    n_extracted_relations += 1
                                     # directed_relations.add(
                                     #     (subject_text.lower(), grandchild.text.lower())
                                     # )
-                                subject_object_in_top_n_words += int(
-                                    grandchild.text.lower() in top_n_words
-                                    and subject_text.lower() in top_n_words
-                                )
 
                     # Search for indirect objects through the prep dependency.
                     if child.dep_ in ["prep"]:
@@ -284,13 +251,10 @@ def get_directed_relations(
                                         subject_negative_determiner,
                                         verbose=verbose,
                                     )
+                                    n_extracted_relations += 1
                                     # directed_relations.add(
                                     #     (subject_text.lower(), grandchild.text.lower())
                                     # )
-                                subject_object_in_top_n_words += int(
-                                    grandchild.text.lower() in top_n_words
-                                    and subject_text.lower() in top_n_words
-                                )
 
                     # Search for direct objects through the dobj and pobj dependencies.
                     if child.dep_ in ["dobj", "pobj"]:
@@ -314,13 +278,10 @@ def get_directed_relations(
                                 subject_negative_determiner,
                                 verbose=verbose,
                             )
+                            n_extracted_relations += 1
                             # directed_relations.add(
                             #     (subject_text.lower(), child.text.lower())
                             # )
-                        subject_object_in_top_n_words += int(
-                            child.text.lower() in top_n_words
-                            and subject_text.lower() in top_n_words
-                        )
 
                         # Check if the object is in conjunction with another object.
                         for grandchild in child.children:
@@ -344,13 +305,10 @@ def get_directed_relations(
                                         subject_negative_determiner,
                                         verbose=verbose,
                                     )
+                                    n_extracted_relations += 1
                                     # directed_relations.add(
                                     #     (subject_text.lower(), grandchild.text.lower())
                                     # )
-                                subject_object_in_top_n_words += int(
-                                    grandchild.text.lower() in top_n_words
-                                    and subject_text.lower() in top_n_words
-                                )
 
                             # Continue searching for objects through the prep dependency.
                             if grandchild.dep_ in ["prep"]:
@@ -377,16 +335,13 @@ def get_directed_relations(
                                                 subject_negative_determiner,
                                                 verbose=verbose,
                                             )
+                                            n_extracted_relations += 1
                                             # directed_relations.add(
                                             #     (
                                             #         subject_text.lower(),
                                             #         great_grandchild.text.lower(),
                                             #     )
                                             # )
-                                        subject_object_in_top_n_words += int(
-                                            great_grandchild.text.lower() in top_n_words
-                                            and subject_text.lower() in top_n_words
-                                        )
 
     # Create a dataframe with columns words, was_subject, was_object.
     subjects_df = pd.DataFrame(
@@ -405,15 +360,12 @@ def get_directed_relations(
     # Can be removed later.
 
     if verbose:
-        print(
-            subject_object_in_top_n_words,
-            " of the subjects and objects were in the top 30 words.",
-        )
+        print("Number of extracted relations: ", n_extracted_relations)
 
     return directed_relations
 
 def add_directed_relation(
-    directed_relations: set,
+    directed_relations: dict,
     subject: str,
     object: str,
     subject_negative_determiner: bool = False,
@@ -425,8 +377,8 @@ def add_directed_relation(
 
     Parameters
     ----------
-    directed_relations : set
-        Set of directed relations.
+    directed_relations : dict
+        Dictionary of directed relations. Key is the (subject, object) tuple, value is the number of relations.
     subject : str
         Subject of the relation.
     object : str
@@ -435,26 +387,34 @@ def add_directed_relation(
         Whether the subject has a negative determiner, by default False
     """
     if subject_negative_determiner:
-        directed_relations.add((object, subject))
+        if (object, subject) in directed_relations:
+            directed_relations[(object, subject)] += 1
+        else:
+            directed_relations[(object, subject)] = 1
         if verbose:
-            print("added relation: ", (object, subject))
+            print("Adding relation: '", object, "' -> '", subject, "'")
     else:
-        directed_relations.add((subject, object))
+        if (subject, object) in directed_relations:
+            directed_relations[(subject, object)] += 1
+        else:
+            directed_relations[(subject, object)] = 1
         if verbose:
-            print("added relation: ", (subject, object))
+            print("Adding relation: '", subject, "' -> '", object, "'")
 
 
 def order_directed_relations(
-    directed_relations: set,
+    directed_relations: dict,
     tf_idf_pre_filtering: pd.DataFrame,
     order_by: str = "tf_idf",
+    include_ordering_wrt_occurences: bool = True,
+    verbose: bool = False,
 ):
     """Order the directed relations with respect to the number of relations and the tf_idf of the first word of the relation.
 
     Parameters
     ----------
-    directed_relations : set
-        Set of directed relations.
+    directed_relations : dict
+        Dictionary of directed relations. Key is the (subject, object) tuple, value is the number of relations.
     tf_idf_pre_filtering : pd.DataFrame
         Dataframe with columns words and tf_idf.
     order_by : str, optional
@@ -465,16 +425,28 @@ def order_directed_relations(
     ordered_directed_relations : list
         List of ordered directed relations.
     """
-    ordered_directed_relations = list(directed_relations)
+    ordered_directed_relations = list(directed_relations.keys())
 
     first_words = list(set([relation[0] for relation in ordered_directed_relations]))
+
+    # Remove a relation if there's the opposite relation with more occurences.
+    for first, second in ordered_directed_relations:
+        if (
+            second,
+            first,
+        ) in ordered_directed_relations and directed_relations[
+            (second, first)
+        ] > directed_relations[
+            (first, second)
+        ]:
+            ordered_directed_relations.remove((first, second))
 
     # Get the number of relations for each word in which it's superior.
     number_of_relations = {}
     for word in first_words:
-        number_of_relations[word] = len(
+        number_of_relations[word] = sum(
             [
-                relation[0]
+                directed_relations[relation]
                 for relation in ordered_directed_relations
                 if relation[0] == word
             ]
@@ -495,7 +467,7 @@ def order_directed_relations(
         ]["tf"].values[0]
 
     # Order the first words with respect to the number of relations and the tf_idf.
-    if not order_by == "tf":
+    if order_by == "tf_idf":
         first_words.sort(
             key=lambda x: number_of_relations[x] * tf_idf_of_words[x], reverse=True
         )
@@ -532,8 +504,30 @@ def order_directed_relations(
             key=lambda x: number_of_relations[x] * tf_of_words[x], reverse=True
         )
 
-    ordered_directed_relations.sort(
-        key=lambda x: first_words.index(x[0]), reverse=False
-    )
+    # Order the relations with respect to the number of occurances of the relation first
+    # so directed_relations[word],
+    # and then with respect to the order of the first word in the first_words list.
+    if include_ordering_wrt_occurences:
+        ordered_directed_relations.sort(
+            key=lambda x: (directed_relations[x], -first_words.index(x[0])), reverse=True
+        )
+
+        if verbose:
+            # Make a dataframe with relations and occurances and print it completely
+            occurances_of_directed_relations = [
+                directed_relations[relation] for relation in ordered_directed_relations
+            ]
+            df = pd.DataFrame(
+                {
+                    "relation": ordered_directed_relations,
+                    "occurances": occurances_of_directed_relations,
+                }
+            )
+            with pd.option_context("display.max_rows", None, "display.max_columns", None):
+                print(df)
+    else:
+        ordered_directed_relations.sort(
+            key=lambda x: first_words.index(x[0]), reverse=False
+        )
 
     return ordered_directed_relations
