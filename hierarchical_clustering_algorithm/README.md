@@ -7,7 +7,7 @@ The motivation of creating a hierarcical clustering of this kind was to use it w
 
 ## Coding details
 
-The repository currently consists of:
+The folder currently consists of:
 - `clustering_class.py` -> the file containing the definition of the hierarchical clustering class with all the methods and options of the clustering.
 - `clustering_class_testing.ipynb` -> a notebook with an example of usage of the algorithm on the `glove-wiki-gigaword-300` pretrained word embedding. The class is completely general and can be used on any pretrained word embedding.
 
