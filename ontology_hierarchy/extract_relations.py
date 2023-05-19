@@ -68,7 +68,7 @@ def get_directed_relations(
         "theirs",
     ]
 
-    negative_determiners = [
+    negative_words = [
         'no',
         'not',
         'none',
@@ -148,10 +148,18 @@ def get_directed_relations(
                 subject_negative_determiner = False
                 # Look for negative determiner dependencies in the subject.
                 for child in current_subject.children:
-                    if child.dep_ in ["det"] and child.text.lower() in negative_determiners:
+                    if child.dep_ in ["det"] and child.text.lower() in negative_words:
                         if verbose:
-                            print("Negative determiner: ", child.text, ". Inverting order of relation.")
+                            print("Negative subject determiner: ", child.text, ".")
                         subject_negative_determiner = True
+
+                verb_negative_adverb = False
+                # Look for negative adverb dependencies in the verb.
+                for child in root.children:
+                    if child.dep_ in ["neg", "advmod"] and child.text.lower() in negative_words:
+                        if verbose:
+                            print("Negative adverb: ", child.text, ".")
+                        verb_negative_adverb = True
 
                 # Check if subject is a pronoun.
                 # If it is, replace with a non-pronoun subject
@@ -213,19 +221,19 @@ def get_directed_relations(
                                     and subject_text.lower() in top_n_words
                                     and grandchild.text.lower() != subject_text.lower()
                                 ):
-                                    # if subject.pos_ in noun_pos and grandchild.pos_ in noun_pos:
-                                    # print((subject.lower(), grandchild.text.lower()))
+                                    object_negative_determiner = search_for_object_negative_determiner(
+                                        grandchild, negative_words, verbose=verbose
+                                    )
                                     add_directed_relation(
                                         directed_relations,
                                         subject_text.lower(),
                                         grandchild.text.lower(),
                                         subject_negative_determiner,
+                                        verb_negative_adverb,
+                                        object_negative_determiner,
                                         verbose=verbose,
                                     )
                                     n_extracted_relations += 1
-                                    # directed_relations.add(
-                                    #     (subject_text.lower(), grandchild.text.lower())
-                                    # )
 
                     # Search for indirect objects through the prep dependency.
                     if child.dep_ in ["prep"]:
@@ -242,19 +250,19 @@ def get_directed_relations(
                                     and subject_text.lower() in top_n_words
                                     and grandchild.text.lower() != subject_text.lower()
                                 ):
-                                    # if subject.pos_ in noun_pos and grandchild.pos_ in noun_pos:
-                                    # print((subject.lower(), grandchild.text.lower()))
+                                    object_negative_determiner = search_for_object_negative_determiner(
+                                        grandchild, negative_words, verbose=verbose
+                                    )
                                     add_directed_relation(
                                         directed_relations,
                                         subject_text.lower(),
                                         grandchild.text.lower(),
                                         subject_negative_determiner,
+                                        verb_negative_adverb,
+                                        object_negative_determiner,
                                         verbose=verbose,
                                     )
                                     n_extracted_relations += 1
-                                    # directed_relations.add(
-                                    #     (subject_text.lower(), grandchild.text.lower())
-                                    # )
 
                     # Search for direct objects through the dobj and pobj dependencies.
                     if child.dep_ in ["dobj", "pobj"]:
@@ -269,19 +277,19 @@ def get_directed_relations(
                             and subject_text.lower() in top_n_words
                             and child.text.lower() != subject_text.lower()
                         ):
-                            # if subject.pos_ in noun_pos and child.pos_ in noun_pos:
-                            # print((subject.lower(), child.text.lower()))
+                            object_negative_determiner = search_for_object_negative_determiner(
+                                child, negative_words, verbose=verbose
+                            )
                             add_directed_relation(
                                 directed_relations,
                                 subject_text.lower(),
                                 child.text.lower(),
                                 subject_negative_determiner,
+                                verb_negative_adverb,
+                                object_negative_determiner,
                                 verbose=verbose,
                             )
                             n_extracted_relations += 1
-                            # directed_relations.add(
-                            #     (subject_text.lower(), child.text.lower())
-                            # )
 
                         # Check if the object is in conjunction with another object.
                         for grandchild in child.children:
@@ -296,19 +304,19 @@ def get_directed_relations(
                                     and subject_text.lower() in top_n_words
                                     and grandchild.text.lower() != subject_text.lower()
                                 ):
-                                    # if subject.pos_ in noun_pos and grandchild.pos_ in noun_pos:
-                                    # print((subject.lower(), grandchild.text.lower()))
+                                    object_negative_determiner = search_for_object_negative_determiner(
+                                        grandchild, negative_words, verbose=verbose
+                                    )
                                     add_directed_relation(
                                         directed_relations,
                                         subject_text.lower(),
                                         grandchild.text.lower(),
                                         subject_negative_determiner,
+                                        verb_negative_adverb,
+                                        object_negative_determiner,
                                         verbose=verbose,
                                     )
                                     n_extracted_relations += 1
-                                    # directed_relations.add(
-                                    #     (subject_text.lower(), grandchild.text.lower())
-                                    # )
 
                             # Continue searching for objects through the prep dependency.
                             if grandchild.dep_ in ["prep"]:
@@ -326,22 +334,19 @@ def get_directed_relations(
                                             and great_grandchild.text.lower()
                                             != subject_text.lower()
                                         ):
-                                            # if subject.pos_ in noun_pos and great_grandchild.pos_ in noun_pos:
-                                            # print((subject.lower(), great_grandchild.text.lower()))
+                                            object_negative_determiner = search_for_object_negative_determiner(
+                                                great_grandchild, negative_words, verbose=verbose
+                                            )
                                             add_directed_relation(
                                                 directed_relations,
                                                 subject_text.lower(),
                                                 great_grandchild.text.lower(),
                                                 subject_negative_determiner,
+                                                verb_negative_adverb,
+                                                object_negative_determiner,
                                                 verbose=verbose,
                                             )
                                             n_extracted_relations += 1
-                                            # directed_relations.add(
-                                            #     (
-                                            #         subject_text.lower(),
-                                            #         great_grandchild.text.lower(),
-                                            #     )
-                                            # )
 
     # Create a dataframe with columns words, was_subject, was_object.
     subjects_df = pd.DataFrame(
@@ -364,13 +369,36 @@ def get_directed_relations(
 
     return directed_relations
 
+
+def search_for_object_negative_determiner(token, negative_words, verbose=False):
+    """Search for negative determiner dependencies in the object.
+
+    Parameters
+    ----------
+    token : spacy.tokens.token.Token
+        The object token.
+
+    Returns
+    -------
+    bool
+        Whether the object has a negative determiner.
+    """
+    object_negative_determiner = False
+    for child in token.children:
+        if child.dep_ in ["det"] and child.text.lower() in negative_words:
+            if verbose:
+                print("Negative object determiner: ", child.text, ".")
+            object_negative_determiner = True
+    return object_negative_determiner
+
+
 def add_directed_relation(
     directed_relations: dict,
     subject: str,
     object: str,
     subject_negative_determiner: bool = False,
-    #object_negative_determiner: bool = False,
-    #verb_negative_determiner: bool = False,
+    object_negative_determiner: bool = False,
+    verb_negative_adverb: bool = False,
     verbose: bool = False,
 ):
     """Adds a directed relation to the set of directed relations.
@@ -386,12 +414,14 @@ def add_directed_relation(
     subject_negative_determiner : bool, optional
         Whether the subject has a negative determiner, by default False
     """
-    if subject_negative_determiner:
+    revert_order = (subject_negative_determiner + verb_negative_adverb + object_negative_determiner) % 2 == 1
+    if revert_order:
         if (object, subject) in directed_relations:
             directed_relations[(object, subject)] += 1
         else:
             directed_relations[(object, subject)] = 1
         if verbose:
+            print("Inverting order of relation.")
             print("Adding relation: '", object, "' -> '", subject, "'")
     else:
         if (subject, object) in directed_relations:
