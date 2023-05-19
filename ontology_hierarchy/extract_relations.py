@@ -40,8 +40,6 @@ def get_directed_relations(
 
     n_extracted_relations = 0
 
-    noun_pos = ["NOUN", "PROPN"]
-
     pronouns = [
         "i",
         "me",

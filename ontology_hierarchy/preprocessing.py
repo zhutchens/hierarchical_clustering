@@ -609,20 +609,7 @@ def get_top_30_gender_number_dictionary():
     return top_30_gender_number_dictionary
 
 def get_gospel_top_70_words_dictionary():
-
-    # Generate the dictionary of gender and number for
-    # the following 70 words:
-
-    # ['unto', 'shall', 'jesus', 'man', 'son', 'god', 'things', 'thy',
-    #    'father', 'lord', 'disciples', 'day', 'men', 'many', 'house',
-    #    'kingdom', 'people', 'world', 'upon', 'great', 'john', 'good',
-    #    'peter', 'may', 'might', 'among', 'days', 'way', 'hand', 'jews',
-    #    'would', 'life', 'name', 'pharisees', 'mother', 'time', 'word',
-    #    'children', 'city', 'jerusalem', 'dead', 'certain', 'master',
-    #    'chief', 'spirit', 'temple', 'multitude', 'hour', 'priests',
-    #    'simon', 'bread', 'galilee', 'place', 'whole', 'christ', 'servant',
-    #    'scribes', 'woman', 'nothing', 'brother', 'earth', 'thine', 'king',
-    #    'prophet', 'hands', 'pilate', 'light', 'sea', 'mary', 'wife']
+    """Get a dictionary of top 70 words of the Gospels with gender and number."""
 
     gospel_top_70_words_dictionary = {
         "unto": ("Neut", "Sing"),
