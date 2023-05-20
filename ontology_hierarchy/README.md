@@ -2,9 +2,11 @@
 This folder contains a method of generating ontological hierarchies.
 
 The method consists of the following:
-- `preprocessing.py` : preprocessing and filtering functions based on `tf`, `tf_idf` and `nltk` for part-of-speech tagging. The final output of these functions is a dataframe of filtered words (options for exclusion of stopwords, verbs, determiners, pronouns, adverbs and numbers) with `tf`, `df` and `tf_idf` measures. The dataframe will ordered with respect to the desired measure (default is `tf_idf`). From this dataframe, one can extract the `top_n_words` with respect to a desired measure and pass onto the relation extractor.
+## preprocessing.py
+Preprocessing and filtering functions based on `tf`, `tf_idf` and `nltk` for part-of-speech tagging. The final output of these functions is a dataframe of filtered words (options for exclusion of stopwords, verbs, determiners, pronouns, adverbs and numbers) with `tf`, `df` and `tf_idf` measures. The dataframe will ordered with respect to the desired measure (default is `tf_idf`). From this dataframe, one can extract the `top_n_words` with respect to a desired measure and pass onto the relation extractor.
 
-- `extract_relations.py` : given the filtered `top_n_words` and a list of all sentences of the corpus of text, the function `get_directed_relations` will extract directed relations between the words. The relations are found using SpaCy dependency tree parsing by extracting subject-object pairs, identifying negative relations, replacing pronouns, using conjunct subjects and so on. As a simple example, from the sentence 
+## extract_relations.py
+Given the filtered `top_n_words` and a list of all sentences of the corpus of text, the function `get_directed_relations` will extract directed relations between the words. The relations are found using SpaCy dependency tree parsing by extracting subject-object pairs, identifying negative relations, replacing pronouns, using conjunct subjects and so on. As a simple example, from the sentence 
 
 "Then Jesus sent the multitude away, and went into the house." 
 
@@ -16,4 +18,11 @@ the opposite relation (God->man) will be extracted due to the negative determine
 
 Before feeding the relations into the iterative hierarchy construction algorithm, the relations need to be ordered. To do this, the `order_directed_relations` function can be used with a number of options. As the hierarchy construction algorithm is iterative, the order of the relations given to it has a big impact on the outcome.
 
-- `ontology_algorithm.py`: a simple iterative hierarchy construction algorithm `construct_ontology_hierarchy` and a function which prints the hierarchy out. Upon construction, the hierarchy is constantly checked for cycles.
+## ontology_algorithm.py
+A simple iterative hierarchy construction algorithm `construct_ontology_hierarchy` and a function which prints the hierarchy out. Upon construction, the hierarchy is constantly checked for cycles.
+
+## Application examples
+In two notebooks, application of the whole workflow is demonstrated. For both, we use the KJV Bible as the data:
+
+- `genesis_ontology.py`: generation of a ontological hierarchy of key terms in Genesis. One can specify the `last_chapter` that will be included in the analysis and `n` as the number of key terms taken from the preprocessing.
+- `whole_bible_ontology.ipynb`: generation of an ontological hierarchy of key terms in any set of books of the Bible. The set of books can be specified in the `chosen_books` variable and the number of key terms extraced in the `n` variable.
