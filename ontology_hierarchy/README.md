@@ -23,7 +23,8 @@ Before feeding the relations into the iterative hierarchy construction algorithm
 ## ontology_algorithm.py
 A simple iterative hierarchy construction algorithm `construct_ontology_hierarchy`. Upon construction, the hierarchy is constantly checked for cycles. Additionally, there is a function `print_hierarchy_tree_from_ontology` which can print the hierarchy out: 
 
-ontology_hierarchy_example.png
+![lala](ontology_hierarchy_example.png "lala")
+
 
 ## Application examples
 In two notebooks, application of the whole workflow is demonstrated. For both, we use the KJV Bible as the corpus of text:
