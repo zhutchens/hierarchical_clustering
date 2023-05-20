@@ -1,15 +1,12 @@
-from preprocessing import (
-    preprocess_kjv,
-    get_word_types_with_tf_idf,
-    get_gospel_top_70_words_dictionary,
-)
-from extract_relations import (
-    get_directed_relations,
-    order_directed_relations,
-)
+from extract_relations import get_directed_relations, order_directed_relations
 from ontology_algorithm import (
     construct_ontology_hierarchy,
     print_hierarchy_tree_from_ontology,
+)
+from preprocessing import (
+    get_gospel_top_70_words_dictionary,
+    get_word_types_with_tf_idf,
+    preprocess_kjv,
 )
 
 kjv_path = "/Users/zebo/Documents/Freelancing/upwork/Peter_J_Worth_Jr/NLP/hierarchical_clustering/data/t_kjv.csv"
@@ -23,12 +20,12 @@ all_books = kjv_bible_df["book"].unique()
 chosen_books = [
     "Matthew",
     "Luke",
-    #"Acts",
-    #"Revelation",
+    # "Acts",
+    # "Revelation",
     "John",
     "Mark",
 ]
-    
+
 
 print("Chosen books: ", chosen_books)
 
@@ -80,4 +77,4 @@ ordered_directed_relations = order_directed_relations(
     include_ordering_wrt_occurences=True,
     verbose=True,
 )
-#ordered_directed_relations
+# ordered_directed_relations

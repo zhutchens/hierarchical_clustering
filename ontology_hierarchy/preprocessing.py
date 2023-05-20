@@ -1,11 +1,11 @@
 import math
 import re
+from collections import Counter
 from typing import Optional
 
 import nltk
 import numpy as np
 import pandas as pd
-from collections import Counter
 
 
 def preprocess_kjv(
@@ -109,12 +109,13 @@ def preprocess_kjv(
 
     return df
 
+
 # make a better get_tf using Counter from collections
 def better_get_tf_for_documents(documents, sortby="tf", skip_stopwords: bool = False):
     """Get the term frequency for each word in a list of documents.
 
     Much faster version of the same function. Uses Counter from collections.
-    
+
     Parameters
     ----------
     verses : list
@@ -123,7 +124,7 @@ def better_get_tf_for_documents(documents, sortby="tf", skip_stopwords: bool = F
         The column to sort by, by default 'tf'. Can be chosen from ['word', 'tc', 'tf'].
     skip_stopwords : bool, optional
         Whether to skip stopwords, by default False.
-    
+
     Returns
     -------
     pd.DataFrame
@@ -159,7 +160,6 @@ def better_get_tf_for_documents(documents, sortby="tf", skip_stopwords: bool = F
         elif word_lower not in stopwords_set:
             tf.loc[tf.word.isin([word_lower]), "tf"] += word_counts[word] / n_words
             tf.loc[tf.word.isin([word_lower]), "tc"] += word_counts[word]
-        
 
     tf = tf.sort_values(by=sortby, ascending=False)
     tf = tf.reset_index(drop=True)
@@ -295,7 +295,9 @@ def get_tf_idf_for_documents(documents, sort_by="tf", skip_stopwords: bool = Fal
         A DataFrame with the tf-idf for each word in the documents.
     """
 
-    tf = better_get_tf_for_documents(documents, sortby="word", skip_stopwords=skip_stopwords)
+    tf = better_get_tf_for_documents(
+        documents, sortby="word", skip_stopwords=skip_stopwords
+    )
     tf = tf.reset_index(drop=True)
     idf = get_idf_for_documents(documents, sortby="word", skip_stopwords=skip_stopwords)
     idf = idf.reset_index(drop=True)
@@ -608,6 +610,7 @@ def get_top_30_gender_number_dictionary():
 
     return top_30_gender_number_dictionary
 
+
 def get_gospel_top_70_words_dictionary():
     """Get a dictionary of top 70 words of the Gospels with gender and number."""
 
@@ -685,4 +688,3 @@ def get_gospel_top_70_words_dictionary():
     }
 
     return gospel_top_70_words_dictionary
-

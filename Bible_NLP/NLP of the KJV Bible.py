@@ -16,7 +16,6 @@
 # Load EDA Pkgs
 import pandas as pd
 
-
 # In[2]:
 
 
@@ -235,7 +234,8 @@ df1.iloc[26558]
 
 
 # For Most of the NLP 
-import spacy 
+import spacy
+
 nlp = spacy.load('en')
 
 
@@ -244,7 +244,6 @@ nlp = spacy.load('en')
 
 # For Sentiment Analysis
 from textblob import TextBlob
-
 
 # In[25]:
 
@@ -446,7 +445,6 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 
-
 # In[70]:
 
 
@@ -473,6 +471,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random
 
 # Naive Bayes Classifier
 from sklearn.naive_bayes import MultinomialNB
+
 clf = MultinomialNB()
 clf.fit(X_train,y_train)
 clf.score(X_test,y_test)
@@ -547,7 +546,6 @@ clf.predict(vect2)
 
 
 from sklearn.externals import joblib
-
 
 # In[83]:
 

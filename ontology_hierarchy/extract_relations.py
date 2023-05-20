@@ -1,6 +1,5 @@
 import pandas as pd
 import spacy
-
 from preprocessing import get_top_30_gender_number_dictionary
 
 
@@ -67,17 +66,17 @@ def get_directed_relations(
     ]
 
     negative_words = [
-        'no',
-        'not',
-        'none',
-        'nobody',
-        'nothing',
-        'neither',
-        'nowhere',
-        'never',
-        'hardly',
-        'scarcely',
-        'barely',
+        "no",
+        "not",
+        "none",
+        "nobody",
+        "nothing",
+        "neither",
+        "nowhere",
+        "never",
+        "hardly",
+        "scarcely",
+        "barely",
     ]
 
     for verse_idx, verse in enumerate(all_verses):
@@ -85,7 +84,7 @@ def get_directed_relations(
         doc_sents = [s for s in doc.sents]
         if verbose:
             print("\n", len(doc_sents), " sentences in verse ", verse_idx)
-        if verse_idx==640:
+        if verse_idx == 640:
             breakpoint()
         for sent in doc_sents:
             if verbose:
@@ -154,7 +153,10 @@ def get_directed_relations(
                 verb_negative_adverb = False
                 # Look for negative adverb dependencies in the verb.
                 for child in root.children:
-                    if child.dep_ in ["neg", "advmod"] and child.text.lower() in negative_words:
+                    if (
+                        child.dep_ in ["neg", "advmod"]
+                        and child.text.lower() in negative_words
+                    ):
                         if verbose:
                             print("Negative adverb: ", child.text, ".")
                         verb_negative_adverb = True
@@ -219,8 +221,10 @@ def get_directed_relations(
                                     and subject_text.lower() in top_n_words
                                     and grandchild.text.lower() != subject_text.lower()
                                 ):
-                                    object_negative_determiner = search_for_object_negative_determiner(
-                                        grandchild, negative_words, verbose=verbose
+                                    object_negative_determiner = (
+                                        search_for_object_negative_determiner(
+                                            grandchild, negative_words, verbose=verbose
+                                        )
                                     )
                                     add_directed_relation(
                                         directed_relations,
@@ -248,8 +252,10 @@ def get_directed_relations(
                                     and subject_text.lower() in top_n_words
                                     and grandchild.text.lower() != subject_text.lower()
                                 ):
-                                    object_negative_determiner = search_for_object_negative_determiner(
-                                        grandchild, negative_words, verbose=verbose
+                                    object_negative_determiner = (
+                                        search_for_object_negative_determiner(
+                                            grandchild, negative_words, verbose=verbose
+                                        )
                                     )
                                     add_directed_relation(
                                         directed_relations,
@@ -275,8 +281,10 @@ def get_directed_relations(
                             and subject_text.lower() in top_n_words
                             and child.text.lower() != subject_text.lower()
                         ):
-                            object_negative_determiner = search_for_object_negative_determiner(
-                                child, negative_words, verbose=verbose
+                            object_negative_determiner = (
+                                search_for_object_negative_determiner(
+                                    child, negative_words, verbose=verbose
+                                )
                             )
                             add_directed_relation(
                                 directed_relations,
@@ -302,8 +310,10 @@ def get_directed_relations(
                                     and subject_text.lower() in top_n_words
                                     and grandchild.text.lower() != subject_text.lower()
                                 ):
-                                    object_negative_determiner = search_for_object_negative_determiner(
-                                        grandchild, negative_words, verbose=verbose
+                                    object_negative_determiner = (
+                                        search_for_object_negative_determiner(
+                                            grandchild, negative_words, verbose=verbose
+                                        )
                                     )
                                     add_directed_relation(
                                         directed_relations,
@@ -332,8 +342,12 @@ def get_directed_relations(
                                             and great_grandchild.text.lower()
                                             != subject_text.lower()
                                         ):
-                                            object_negative_determiner = search_for_object_negative_determiner(
-                                                great_grandchild, negative_words, verbose=verbose
+                                            object_negative_determiner = (
+                                                search_for_object_negative_determiner(
+                                                    great_grandchild,
+                                                    negative_words,
+                                                    verbose=verbose,
+                                                )
                                             )
                                             add_directed_relation(
                                                 directed_relations,
@@ -412,7 +426,9 @@ def add_directed_relation(
     subject_negative_determiner : bool, optional
         Whether the subject has a negative determiner, by default False
     """
-    revert_order = (subject_negative_determiner + verb_negative_adverb + object_negative_determiner) % 2 == 1
+    revert_order = (
+        subject_negative_determiner + verb_negative_adverb + object_negative_determiner
+    ) % 2 == 1
     if revert_order:
         if (object, subject) in directed_relations:
             directed_relations[(object, subject)] += 1
@@ -449,7 +465,7 @@ def order_directed_relations(
         The metric to order the relations by. Can be "tf", "tf_idf", "number_of_relations" or "product." By default "tf_idf".
     include_ordering_wrt_occurences : bool, optional
         Whether to include the ordering with respect to the number of occurances of the relation. By default True.
-        
+
     Returns
     -------
     ordered_directed_relations : list
@@ -466,9 +482,7 @@ def order_directed_relations(
             first,
         ) in ordered_directed_relations and directed_relations[
             (second, first)
-        ] > directed_relations[
-            (first, second)
-        ]:
+        ] > directed_relations[(first, second)]:
             ordered_directed_relations.remove((first, second))
 
     # Get the number of relations for each word in which it's superior.
@@ -492,9 +506,9 @@ def order_directed_relations(
     # Get tf from the dataframe tf_idf_pre_filtering with columns words and tf.
     tf_of_words = {}
     for word in first_words:
-        tf_of_words[word] = tf_idf_pre_filtering[
-            tf_idf_pre_filtering["word"] == word
-        ]["tf"].values[0]
+        tf_of_words[word] = tf_idf_pre_filtering[tf_idf_pre_filtering["word"] == word][
+            "tf"
+        ].values[0]
 
     # Order the first words with respect to the number of relations and the tf_idf.
     if order_by == "tf_idf":
@@ -539,7 +553,8 @@ def order_directed_relations(
     # and then with respect to the order of the first word in the first_words list.
     if include_ordering_wrt_occurences:
         ordered_directed_relations.sort(
-            key=lambda x: (directed_relations[x], -first_words.index(x[0])), reverse=True
+            key=lambda x: (directed_relations[x], -first_words.index(x[0])),
+            reverse=True,
         )
 
         if verbose:
@@ -553,7 +568,9 @@ def order_directed_relations(
                     "occurances": occurances_of_directed_relations,
                 }
             )
-            with pd.option_context("display.max_rows", None, "display.max_columns", None):
+            with pd.option_context(
+                "display.max_rows", None, "display.max_columns", None
+            ):
                 print(df)
     else:
         ordered_directed_relations.sort(
