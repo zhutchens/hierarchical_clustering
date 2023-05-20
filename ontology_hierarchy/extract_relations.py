@@ -433,7 +433,7 @@ def add_directed_relation(
 def order_directed_relations(
     directed_relations: dict,
     tf_idf_pre_filtering: pd.DataFrame,
-    order_by: str = "tf_idf",
+    order_by: str = "product",
     include_ordering_wrt_occurences: bool = True,
     verbose: bool = False,
 ):
@@ -447,7 +447,9 @@ def order_directed_relations(
         Dataframe with columns words and tf_idf.
     order_by : str, optional
         The metric to order the relations by. Can be "tf", "tf_idf", "number_of_relations" or "product." By default "tf_idf".
-
+    include_ordering_wrt_occurences : bool, optional
+        Whether to include the ordering with respect to the number of occurances of the relation. By default True.
+        
     Returns
     -------
     ordered_directed_relations : list
