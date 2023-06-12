@@ -409,6 +409,7 @@ def get_word_types_with_tf_idf(
     include_pronouns=True,
     include_adverbs=True,
     include_numbers=True,
+    verbose=False,
 ):
     """Get a dataframe of words with their tf-idf scores and word types.
 
@@ -465,7 +466,8 @@ def get_word_types_with_tf_idf(
     exclude_set = verb_set | determiner_set | pronouns_set | adverbs_set | numbers_set
 
     if exclude_set:
-        print("Excluding words with the following word types: {}".format(exclude_set))
+        if verbose:
+            print("Excluding words with the following word types: {}".format(exclude_set))
         # Exclude words if the frequency of the word type from exclude_set is
         # greater than 10% of the total word types of that word
         tf_idf_word_types = tf_idf_word_types[

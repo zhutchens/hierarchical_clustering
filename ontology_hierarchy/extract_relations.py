@@ -267,6 +267,20 @@ def get_directed_relations(
                                         verbose=verbose,
                                     )
                                     n_extracted_relations += 1
+                                # Continue searching for objects through conj and prep dependencies.
+                                n_extracted_relations = search_objects_through_conj_prep_dependencies(
+                                    grandchild,
+                                    objects,
+                                    top_n_words,
+                                    subject_text,
+                                    negative_words,
+                                    directed_relations,
+                                    subject_negative_determiner,
+                                    verb_negative_adverb,
+                                    n_extracted_relations,
+                                    verbose,
+                                )
+                                
 
                     # Search for direct objects through the dobj and pobj dependencies.
                     if child.dep_ in ["dobj", "pobj"]:
@@ -297,68 +311,19 @@ def get_directed_relations(
                             )
                             n_extracted_relations += 1
 
-                        # Check if the object is in conjunction with another object.
-                        for grandchild in child.children:
-                            if grandchild.dep_ in ["conj"]:
-                                # print("object: ", grandchild.text)
-                                if grandchild.text in objects:
-                                    objects[grandchild.text] += 1
-                                else:
-                                    objects[grandchild.text] = 1
-                                if (
-                                    grandchild.text.lower() in top_n_words
-                                    and subject_text.lower() in top_n_words
-                                    and grandchild.text.lower() != subject_text.lower()
-                                ):
-                                    object_negative_determiner = (
-                                        search_for_object_negative_determiner(
-                                            grandchild, negative_words, verbose=verbose
-                                        )
-                                    )
-                                    add_directed_relation(
-                                        directed_relations,
-                                        subject_text.lower(),
-                                        grandchild.text.lower(),
-                                        subject_negative_determiner,
-                                        verb_negative_adverb,
-                                        object_negative_determiner,
-                                        verbose=verbose,
-                                    )
-                                    n_extracted_relations += 1
-
-                            # Continue searching for objects through the prep dependency.
-                            if grandchild.dep_ in ["prep"]:
-                                for great_grandchild in grandchild.children:
-                                    if great_grandchild.dep_ in ["pobj"]:
-                                        if verbose:
-                                            print("object: ", great_grandchild.text)
-                                        if great_grandchild.text in objects:
-                                            objects[great_grandchild.text] += 1
-                                        else:
-                                            objects[great_grandchild.text] = 1
-                                        if (
-                                            great_grandchild.text.lower() in top_n_words
-                                            and subject_text.lower() in top_n_words
-                                            and great_grandchild.text.lower()
-                                            != subject_text.lower()
-                                        ):
-                                            object_negative_determiner = (
-                                                search_for_object_negative_determiner(
-                                                    great_grandchild,
-                                                    negative_words,
-                                                    verbose=verbose,
-                                                )
-                                            )
-                                            add_directed_relation(
-                                                directed_relations,
-                                                subject_text.lower(),
-                                                great_grandchild.text.lower(),
-                                                subject_negative_determiner,
-                                                verb_negative_adverb,
-                                                object_negative_determiner,
-                                                verbose=verbose,
-                                            )
-                                            n_extracted_relations += 1
+                        # Continue searching for objects through conj and prep dependencies.
+                        n_extracted_relations = search_objects_through_conj_prep_dependencies(
+                            child,
+                            objects,
+                            top_n_words,
+                            subject_text,
+                            negative_words,
+                            directed_relations,
+                            subject_negative_determiner,
+                            verb_negative_adverb,
+                            n_extracted_relations,
+                            verbose,
+                        )
 
     # Create a dataframe with columns words, was_subject, was_object.
     subjects_df = pd.DataFrame(
@@ -380,6 +345,82 @@ def get_directed_relations(
         print("Number of extracted relations: ", n_extracted_relations)
 
     return directed_relations
+
+
+def search_objects_through_conj_prep_dependencies(
+        object,
+        objects,
+        top_n_words,
+        subject_text,
+        negative_words,
+        directed_relations,
+        subject_negative_determiner,
+        verb_negative_adverb,
+        n_extracted_relations,
+        verbose: bool=False,
+):
+    for child in object.children:
+        if child.dep_ in ["conj"]:
+            # print("object: ", grandchild.text)
+            if child.text in objects:
+                objects[child.text] += 1
+            else:
+                objects[child.text] = 1
+            if (
+                child.text.lower() in top_n_words
+                and subject_text.lower() in top_n_words
+                and child.text.lower() != subject_text.lower()
+            ):
+                object_negative_determiner = (
+                    search_for_object_negative_determiner(
+                        child, negative_words, verbose=verbose
+                    )
+                )
+                add_directed_relation(
+                    directed_relations,
+                    subject_text.lower(),
+                    child.text.lower(),
+                    subject_negative_determiner,
+                    verb_negative_adverb,
+                    object_negative_determiner,
+                    verbose=verbose,
+                )
+                n_extracted_relations += 1
+
+        # Continue searching for objects through the prep dependency.
+        if child.dep_ in ["prep"]:
+            for grandchild in child.children:
+                if grandchild.dep_ in ["pobj"]:
+                    if verbose:
+                        print("object: ", grandchild.text)
+                    if grandchild.text in objects:
+                        objects[grandchild.text] += 1
+                    else:
+                        objects[grandchild.text] = 1
+                    if (
+                        grandchild.text.lower() in top_n_words
+                        and subject_text.lower() in top_n_words
+                        and grandchild.text.lower()
+                        != subject_text.lower()
+                    ):
+                        object_negative_determiner = (
+                            search_for_object_negative_determiner(
+                                grandchild,
+                                negative_words,
+                                verbose=verbose,
+                            )
+                        )
+                        add_directed_relation(
+                            directed_relations,
+                            subject_text.lower(),
+                            grandchild.text.lower(),
+                            subject_negative_determiner,
+                            verb_negative_adverb,
+                            object_negative_determiner,
+                            verbose=verbose,
+                        )
+                        n_extracted_relations += 1
+    return n_extracted_relations
 
 
 def search_for_object_negative_determiner(token, negative_words, verbose=False):
