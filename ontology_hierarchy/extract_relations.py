@@ -36,6 +36,7 @@ def get_directed_relations(
         top_n_words_gender_dictionary = get_top_30_gender_number_dictionary()
 
     directed_relations = {}
+    relations_to_verbs = {}
 
     n_extracted_relations = 0
 
@@ -84,8 +85,6 @@ def get_directed_relations(
         doc_sents = [s for s in doc.sents]
         if verbose:
             print("\n", len(doc_sents), " sentences in verse ", verse_idx)
-        if verse_idx == 640:
-            breakpoint()
         for sent in doc_sents:
             if verbose:
                 print("sentence: ", sent.text)
@@ -228,6 +227,8 @@ def get_directed_relations(
                                     )
                                     add_directed_relation(
                                         directed_relations,
+                                        relations_to_verbs,
+                                        root.text.lower(),
                                         subject_text.lower(),
                                         grandchild.text.lower(),
                                         subject_negative_determiner,
@@ -259,6 +260,8 @@ def get_directed_relations(
                                     )
                                     add_directed_relation(
                                         directed_relations,
+                                        relations_to_verbs,
+                                        root.text.lower(),
                                         subject_text.lower(),
                                         grandchild.text.lower(),
                                         subject_negative_determiner,
@@ -273,8 +276,10 @@ def get_directed_relations(
                                     objects,
                                     top_n_words,
                                     subject_text,
+                                    root.text,
                                     negative_words,
                                     directed_relations,
+                                    relations_to_verbs,
                                     subject_negative_determiner,
                                     verb_negative_adverb,
                                     n_extracted_relations,
@@ -302,6 +307,8 @@ def get_directed_relations(
                             )
                             add_directed_relation(
                                 directed_relations,
+                                relations_to_verbs,
+                                root.text.lower(),
                                 subject_text.lower(),
                                 child.text.lower(),
                                 subject_negative_determiner,
@@ -317,8 +324,10 @@ def get_directed_relations(
                             objects,
                             top_n_words,
                             subject_text,
+                            root.text,
                             negative_words,
                             directed_relations,
+                            relations_to_verbs,
                             subject_negative_determiner,
                             verb_negative_adverb,
                             n_extracted_relations,
@@ -344,19 +353,29 @@ def get_directed_relations(
     if verbose:
         print("Number of extracted relations: ", n_extracted_relations)
 
-    return directed_relations
+    # Order the relations_to_verbs dictionary by the size of the list of verbs.
+    relations_to_verbs = {
+        k: v
+        for k, v in sorted(
+            relations_to_verbs.items(), key=lambda item: len(item[1]), reverse=True
+        )
+    }
+
+    return directed_relations, relations_to_verbs
 
 
 def search_objects_through_conj_prep_dependencies(
-        object,
-        objects,
-        top_n_words,
-        subject_text,
-        negative_words,
-        directed_relations,
-        subject_negative_determiner,
-        verb_negative_adverb,
-        n_extracted_relations,
+        object: spacy.tokens.token.Token,
+        objects: dict,
+        top_n_words: list,
+        subject_text: str,
+        verb_text: str,
+        negative_words: list,
+        directed_relations: list,
+        relations_to_verbs: dict,
+        subject_negative_determiner: bool,
+        verb_negative_adverb: bool,
+        n_extracted_relations: int,
         verbose: bool=False,
 ):
     for child in object.children:
@@ -378,6 +397,8 @@ def search_objects_through_conj_prep_dependencies(
                 )
                 add_directed_relation(
                     directed_relations,
+                    relations_to_verbs,
+                    verb_text.lower(),
                     subject_text.lower(),
                     child.text.lower(),
                     subject_negative_determiner,
@@ -412,6 +433,8 @@ def search_objects_through_conj_prep_dependencies(
                         )
                         add_directed_relation(
                             directed_relations,
+                            relations_to_verbs,
+                            verb_text.lower(),
                             subject_text.lower(),
                             grandchild.text.lower(),
                             subject_negative_determiner,
@@ -447,6 +470,8 @@ def search_for_object_negative_determiner(token, negative_words, verbose=False):
 
 def add_directed_relation(
     directed_relations: dict,
+    relations_to_verbs: dict,
+    verb: str,
     subject: str,
     object: str,
     subject_negative_determiner: bool = False,
@@ -460,12 +485,22 @@ def add_directed_relation(
     ----------
     directed_relations : dict
         Dictionary of directed relations. Key is the (subject, object) tuple, value is the number of relations.
+    relations_to_verbs : dict
+        Dictionary of relations to verbs. Key is the (subject, object) tuple, value is a list of verbs.
+    verb : str
+        Verb of the relation.
     subject : str
         Subject of the relation.
     object : str
         Object of the relation.
     subject_negative_determiner : bool, optional
-        Whether the subject has a negative determiner, by default False
+        Whether the subject has a negative determiner, by default False.
+    object_negative_determiner : bool, optional
+        Whether the object has a negative determiner, by default False.
+    verb_negative_adverb : bool, optional
+        Whether the verb has a negative adverb, by default False.
+    verbose : bool, optional
+        Whether to print debug information, by default False.
     """
     revert_order = (
         subject_negative_determiner + verb_negative_adverb + object_negative_determiner
@@ -473,16 +508,20 @@ def add_directed_relation(
     if revert_order:
         if (object, subject) in directed_relations:
             directed_relations[(object, subject)] += 1
+            relations_to_verbs[(object, subject)].append(verb)
         else:
             directed_relations[(object, subject)] = 1
+            relations_to_verbs[(object, subject)] = [verb]
         if verbose:
             print("Inverting order of relation.")
             print("Adding relation: '", object, "' -> '", subject, "'")
     else:
         if (subject, object) in directed_relations:
             directed_relations[(subject, object)] += 1
+            relations_to_verbs[(subject, object)].append(verb)
         else:
             directed_relations[(subject, object)] = 1
+            relations_to_verbs[(subject, object)] = [verb]
         if verbose:
             print("Adding relation: '", subject, "' -> '", object, "'")
 

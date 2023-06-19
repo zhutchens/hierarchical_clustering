@@ -2,6 +2,7 @@ from extract_relations import get_directed_relations, order_directed_relations
 from ontology_algorithm import (
     construct_ontology_hierarchy,
     print_hierarchy_tree_from_ontology,
+    draw_hierarchy_tree_from_ontology,
 )
 from preprocessing import (
     get_gospel_top_70_words_dictionary,
@@ -63,10 +64,10 @@ for book in chosen_books:
 
 top_n_words_gender_dict = get_gospel_top_70_words_dictionary()
 
-directed_relations = get_directed_relations(
+directed_relations, relations_to_verbs = get_directed_relations(
     top_n_words=top_n_words,
     all_verses=all_verses,
-    verbose=True,
+    verbose=False,
     top_n_words_gender_dictionary=top_n_words_gender_dict,
 )
 
@@ -75,6 +76,5 @@ ordered_directed_relations = order_directed_relations(
     tf_idf_pre_filtering=tf_idf_pre_filtering,
     order_by="product",
     include_ordering_wrt_occurences=True,
-    verbose=True,
+    verbose=False,
 )
-# ordered_directed_relations

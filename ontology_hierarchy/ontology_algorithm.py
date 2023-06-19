@@ -1,4 +1,7 @@
 from anytree import Node, RenderTree
+import graphviz
+from IPython.display import display, Image
+
 
 
 def check_for_cycles(lesser_word, higher_word, ontological_hierarchy):
@@ -103,3 +106,26 @@ def print_hierarchy_tree_from_ontology(
             # print the tree
             for pre, fill, node in RenderTree(tree[root]):
                 print("%s%s" % (pre, node.name))
+
+
+def draw_hierarchy_tree_from_ontology(
+    ontological_hierarchy: dict,
+    relations_to_verbs: dict,
+):
+    """Draw the ontology as a tree using Graphviz."""
+    graph = graphviz.Digraph(graph_attr={"rankdir": "LR"})
+
+    # Create a node for each parent key and add it to the graph.
+    for parent in ontological_hierarchy:
+        if parent not in graph:
+            graph.node(parent, fontname="Calibri Italic", fontsize="12")
+
+    # Add children nodes for each child of a parent.
+    for parent, children in ontological_hierarchy.items():
+        for child in children:
+            if child not in graph:
+                graph.node(child, fontname="Calibri Italic", fontsize="12")
+            label = ", ".join(list(set(relations_to_verbs[(parent, child)])))
+            graph.edge(parent, child, label=label, fontname="Calibri Italic", fontsize="12")
+    
+    display(Image(graph.pipe(format='png', renderer='cairo')))
