@@ -111,10 +111,65 @@ def print_hierarchy_tree_from_ontology(
 def draw_hierarchy_tree_from_ontology(
     ontological_hierarchy: dict,
     relations_to_verbs: dict,
+    drawing_orientation: str = "TB",
+    title: str = None,
+    topic_modelling_chapters: list[str] = None,
 ):
-    """Draw the ontology as a tree using Graphviz."""
-    graph = graphviz.Digraph(graph_attr={"rankdir": "LR"})
+    """Draw the ontology as a tree using Graphviz.
+    
+    Parameters
+    ----------
+    ontological_hierarchy : dict
+        The ontology as a dictionary of parent words and their children.
+    relations_to_verbs : dict
+        The dictionary of relations to verbs.
+    drawing_orientation : str
+        The drawing orientation of the graph. Can be "TB" (top-to-bottom) or "LR" (left-to-right).
+        The default is "TB".
+    title : str
+        The title of the graph. The default is None.
+    topic_modelling_chapters : list
+        The list of chapters extracted using topic modelling. The default is None.
+    """
+    if drawing_orientation == "TB":
+        graph = graphviz.Digraph(
+            graph_attr={"rankdir": "TB"},
+            node_attr={"shape": "box", "fontname": "Calibri Italic", "fontsize": "12"},
+            edge_attr={"fontname": "Calibri Italic", "fontsize": "12"},
+        )
+    elif drawing_orientation == "LR":
+        graph = graphviz.Digraph(
+            graph_attr={"rankdir": "LR"},
+            node_attr={"shape": "box", "fontname": "Calibri Italic", "fontsize": "12"},
+            edge_attr={"fontname": "Calibri Italic", "fontsize": "12"},
+        )
 
+    if topic_modelling_chapters is not None:
+        if title is not None:
+            # Put the title together with the chapters in the top of the graph.
+            graph.attr(
+                label=f"{title}\n\nChapters:\n" + '\n'.join(topic_modelling_chapters),
+                labelloc="t",
+                labeljust="l",
+                fontname="Calibri Italic",
+                fontsize="12",
+            )
+        else:
+            # Put the chapters in the top of the graph.
+            graph.attr(
+                label="Chapters:\n" + '\n'.join(topic_modelling_chapters),
+                labelloc="t",
+                labeljust="l",
+                fontname="Calibri Italic",
+                fontsize="12",
+            )
+            
+
+
+    if title is not None and topic_modelling_chapters is None:
+        # Add title to the top of the graph.
+        graph.attr(label=title, labelloc="t", labeljust="c", fontname="Calibri Italic", fontsize="20")
+        
     # Create a node for each parent key and add it to the graph.
     for parent in ontological_hierarchy:
         if parent not in graph:

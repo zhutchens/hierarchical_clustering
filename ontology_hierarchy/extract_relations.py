@@ -576,6 +576,14 @@ def order_directed_relations(
             ]
         )
 
+    # Check that first words are occuring in the tf_idf_pre_filtering dataframe.
+    for word in first_words:
+        if word not in tf_idf_pre_filtering["word"].values:
+            print(
+                f"Warning: word {word} not in tf_idf_pre_filtering dataframe. Removing it from the list of first words.",
+            )
+            first_words.remove(word)
+
     # Get tf_idf from the dataframe tf_idf_pre_filtering with columns words and tf_idf.
     tf_idf_of_words = {}
     for word in first_words:
