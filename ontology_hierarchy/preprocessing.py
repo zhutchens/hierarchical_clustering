@@ -317,6 +317,8 @@ def get_tf_idf_for_documents(documents, sort_by="tf", skip_stopwords: bool = Fal
 def categorize_words(verses, skip_stopwords: bool = False):
     """Categorize all words given in the list of verses.
 
+    Uses the nltk pos_tagger to categorize the words.
+
     Parameters
     ----------
     verses : list

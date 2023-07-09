@@ -1,8 +1,10 @@
 import contractions
 import nltk
 import numpy as np
+import pandas as pd
 import re
 
+from typing import List
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 
@@ -91,15 +93,28 @@ def kmeans_tfidf_clustering(chapters, num_topics):
 
     # Extract the key terms per cluster and the chapters per cluster.
     for cluster in range(num_topics):
-        key_features = [feature_names[index] for index in ordered_centroids[cluster, :50]]
         print('CLUSTER #'+str(cluster+1))
-        print('Key Features:', key_features)
 
         cluster_chapter_indices = [i for i in range(len(km_tfidf_clusters)) if km_tfidf_clusters[i] == cluster]
         print('Cluster Chapters:', cluster_chapter_indices)
+
+        number_of_key_features = max(50, len(cluster_chapter_indices)*5)
+        key_features = [feature_names[index] for index in ordered_centroids[cluster, :number_of_key_features]]
+
+        print('Key Features:', key_features)
 
         clusters[cluster+1] = cluster_chapter_indices
         key_terms_per_cluster[cluster+1] = key_features
     
     return clusters, key_terms_per_cluster
-    
+
+
+def filter_topic_modeling_key_terms(
+    key_terms: List[str],
+    tf_idf_word_types: pd.DataFrame,
+    verbose: bool = True
+):
+    """Filter out words that are not in the tf-idf word types."""
+    if verbose:
+        print("Removing the following terms: ", [term for term in key_terms if term not in tf_idf_word_types['word'].values])
+    return [term for term in key_terms if term in tf_idf_word_types['word'].values]
