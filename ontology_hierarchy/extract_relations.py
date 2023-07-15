@@ -8,6 +8,7 @@ def get_directed_relations(
     all_verses,
     top_n_words_gender_dictionary: dict = None,
     verbose=False,
+    get_all_one_directional=False,
 ):
     """Extracts directed relations of given words from given corpus.
 
@@ -215,16 +216,20 @@ def get_directed_relations(
                                     objects[grandchild.text] += 1
                                 else:
                                     objects[grandchild.text] = 1
-                                if (
-                                    grandchild.text.lower() in top_n_words
-                                    and subject_text.lower() in top_n_words
-                                    and grandchild.text.lower() != subject_text.lower()
-                                ):
-                                    object_negative_determiner = (
-                                        search_for_object_negative_determiner(
-                                            grandchild, negative_words, verbose=verbose
-                                        )
+                                object_negative_determiner = (
+                                    search_for_object_negative_determiner(
+                                        grandchild, negative_words, verbose=verbose
                                     )
+                                )
+                                if check_whether_to_add_relation(
+                                    subject_text,
+                                    grandchild.text,
+                                    top_n_words,
+                                    subject_negative_determiner,
+                                    object_negative_determiner,
+                                    verb_negative_adverb,
+                                    get_all_one_directional=get_all_one_directional,
+                                ):
                                     add_directed_relation(
                                         directed_relations,
                                         relations_to_verbs,
@@ -248,16 +253,20 @@ def get_directed_relations(
                                     objects[grandchild.text] += 1
                                 else:
                                     objects[grandchild.text] = 1
-                                if (
-                                    grandchild.text.lower() in top_n_words
-                                    and subject_text.lower() in top_n_words
-                                    and grandchild.text.lower() != subject_text.lower()
-                                ):
-                                    object_negative_determiner = (
-                                        search_for_object_negative_determiner(
-                                            grandchild, negative_words, verbose=verbose
-                                        )
+                                object_negative_determiner = (
+                                    search_for_object_negative_determiner(
+                                        grandchild, negative_words, verbose=verbose
                                     )
+                                )
+                                if check_whether_to_add_relation(
+                                    subject_text,
+                                    grandchild.text,
+                                    top_n_words,
+                                    subject_negative_determiner,
+                                    object_negative_determiner,
+                                    verb_negative_adverb,
+                                    get_all_one_directional=get_all_one_directional,
+                                ):
                                     add_directed_relation(
                                         directed_relations,
                                         relations_to_verbs,
@@ -283,6 +292,7 @@ def get_directed_relations(
                                     subject_negative_determiner,
                                     verb_negative_adverb,
                                     n_extracted_relations,
+                                    get_all_one_directional,
                                     verbose,
                                 )
                                 
@@ -295,16 +305,20 @@ def get_directed_relations(
                             objects[child.text] += 1
                         else:
                             objects[child.text] = 1
-                        if (
-                            child.text.lower() in top_n_words
-                            and subject_text.lower() in top_n_words
-                            and child.text.lower() != subject_text.lower()
-                        ):
-                            object_negative_determiner = (
-                                search_for_object_negative_determiner(
-                                    child, negative_words, verbose=verbose
-                                )
+                        object_negative_determiner = (
+                            search_for_object_negative_determiner(
+                                child, negative_words, verbose=verbose
                             )
+                        )
+                        if check_whether_to_add_relation(
+                            subject_text,
+                            child.text,
+                            top_n_words,
+                            subject_negative_determiner,
+                            object_negative_determiner,
+                            verb_negative_adverb,
+                            get_all_one_directional=get_all_one_directional,
+                        ):
                             add_directed_relation(
                                 directed_relations,
                                 relations_to_verbs,
@@ -331,6 +345,7 @@ def get_directed_relations(
                             subject_negative_determiner,
                             verb_negative_adverb,
                             n_extracted_relations,
+                            get_all_one_directional,
                             verbose,
                         )
 
@@ -376,6 +391,7 @@ def search_objects_through_conj_prep_dependencies(
         subject_negative_determiner: bool,
         verb_negative_adverb: bool,
         n_extracted_relations: int,
+        get_all_one_directional: bool,
         verbose: bool=False,
 ):
     for child in object.children:
@@ -385,16 +401,20 @@ def search_objects_through_conj_prep_dependencies(
                 objects[child.text] += 1
             else:
                 objects[child.text] = 1
-            if (
-                child.text.lower() in top_n_words
-                and subject_text.lower() in top_n_words
-                and child.text.lower() != subject_text.lower()
-            ):
-                object_negative_determiner = (
-                    search_for_object_negative_determiner(
-                        child, negative_words, verbose=verbose
-                    )
+            object_negative_determiner = (
+                search_for_object_negative_determiner(
+                    child, negative_words, verbose=verbose
                 )
+            )
+            if check_whether_to_add_relation(
+                subject_text,
+                child.text,
+                top_n_words,
+                subject_negative_determiner,
+                object_negative_determiner,
+                verb_negative_adverb,
+                get_all_one_directional=get_all_one_directional,
+            ):
                 add_directed_relation(
                     directed_relations,
                     relations_to_verbs,
@@ -418,19 +438,20 @@ def search_objects_through_conj_prep_dependencies(
                         objects[grandchild.text] += 1
                     else:
                         objects[grandchild.text] = 1
-                    if (
-                        grandchild.text.lower() in top_n_words
-                        and subject_text.lower() in top_n_words
-                        and grandchild.text.lower()
-                        != subject_text.lower()
-                    ):
-                        object_negative_determiner = (
-                            search_for_object_negative_determiner(
-                                grandchild,
-                                negative_words,
-                                verbose=verbose,
-                            )
+                    object_negative_determiner = (
+                        search_for_object_negative_determiner(
+                            grandchild, negative_words, verbose=verbose
                         )
+                    )
+                    if check_whether_to_add_relation(
+                        subject_text,
+                        grandchild.text,
+                        top_n_words,
+                        subject_negative_determiner,
+                        object_negative_determiner,
+                        verb_negative_adverb,
+                        get_all_one_directional=get_all_one_directional,
+                    ):
                         add_directed_relation(
                             directed_relations,
                             relations_to_verbs,
@@ -524,6 +545,54 @@ def add_directed_relation(
             relations_to_verbs[(subject, object)] = [verb]
         if verbose:
             print("Adding relation: '", subject, "' -> '", object, "'")
+
+def check_whether_to_add_relation(
+    subject_text: str,
+    object_text: str,
+    top_n_words: list,
+    subject_negative_determiner: bool,
+    object_negative_determiner: bool,
+    verb_negative_adverb: bool,
+    get_all_one_directional: bool,
+):
+    """Check whether to add a relation between the subject and the object.
+
+    Parameters
+    ----------
+    subject_text : str
+        The subject of the relation.
+    object_text : str
+        The object of the relation.
+    top_n_words : list
+        The top n words.
+    subject_negative_determiner : bool
+        Whether the subject has a negative determiner.
+    object_negative_determiner : bool
+        Whether the object has a negative determiner.
+    verb_negative_adverb : bool
+        Whether the verb has a negative adverb.
+    get_all_one_directional : bool
+        Whether to get all one directional relations.
+
+    Returns
+    -------
+    bool
+        Whether to add the relation.
+    """
+    revert_order = (
+        subject_negative_determiner + verb_negative_adverb + object_negative_determiner
+    ) % 2 == 1
+
+    if subject_text.lower() != object_text.lower():
+        if get_all_one_directional:
+            if (not revert_order and subject_text.lower() in top_n_words) or (
+                revert_order and object_text.lower() in top_n_words
+            ):
+                return True
+        else:
+            if subject_text.lower() in top_n_words and object_text.lower() in top_n_words:
+                return True
+    return False
 
 
 def order_directed_relations(

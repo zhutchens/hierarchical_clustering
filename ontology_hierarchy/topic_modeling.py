@@ -39,7 +39,7 @@ def normalize_document(doc):
     doc = ' '.join(filtered_tokens)
     return doc
 
-def kmeans_tfidf_clustering(chapters, num_topics):
+def kmeans_tfidf_clustering(chapters, num_topics, n_key_terms=None):
     """Use KMeans clustering to cluster the given chapters into topics.
     
     Parameters:
@@ -55,6 +55,9 @@ def kmeans_tfidf_clustering(chapters, num_topics):
         A dictionary of clusters and their chapters.
     key_terms_per_cluster: dict
         A dictionary of clusters and their key terms.
+    n_key_terms: int
+        The number of key terms to extract per cluster.
+        If None, then the number of key terms is set to max(50, len(cluster_chapter_indices)*5).
     """
     # Normalize the corpus.
     normalize_corpus = np.vectorize(normalize_document)
@@ -97,8 +100,10 @@ def kmeans_tfidf_clustering(chapters, num_topics):
 
         cluster_chapter_indices = [i for i in range(len(km_tfidf_clusters)) if km_tfidf_clusters[i] == cluster]
         print('Cluster Chapters:', cluster_chapter_indices)
-
-        number_of_key_features = max(50, len(cluster_chapter_indices)*5)
+        if n_key_terms is None:
+            number_of_key_features = max(50, len(cluster_chapter_indices)*5)
+        else:
+            number_of_key_features = n_key_terms
         key_features = [feature_names[index] for index in ordered_centroids[cluster, :number_of_key_features]]
 
         print('Key Features:', key_features)
