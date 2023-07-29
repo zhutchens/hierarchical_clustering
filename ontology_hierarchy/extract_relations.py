@@ -7,8 +7,9 @@ def get_directed_relations(
     top_n_words,
     all_verses,
     top_n_words_gender_dictionary: dict = None,
+    get_all_one_directional=None,
+    only_compounds=True,
     verbose=False,
-    get_all_one_directional=False,
 ):
     """Extracts directed relations of given words from given corpus.
 
@@ -20,14 +21,27 @@ def get_directed_relations(
     Parameters
     ----------
     top_n_words : list
-        List of top n words for which to extract relations.
+        List of words to extract directed relations for.
     all_verses : list
-        List of verses to extract relations from.
-
+        Verses of a corpus to extract directed relations from.
+    top_n_words_gender_dictionary: dict
+        Dictionary of gender of top_n_words.
+    get_all_one_directional : str
+        Can be "lower", "higher" or None. If "lower", all relations to which the 
+        top_n_words are superior are extracted. If "higher", all relations to which
+        the top_n_words are inferior are extracted. If None, only relations where
+        the between the top_n_words are extracted.
+    only_compounds : bool
+        If True, if there is a compound word connected to object or subject,
+        the relation using only the compound word is extracted.
+    verbose : bool
+        If True, prints more information.
     Returns
     -------
-    set
-        Set of tuples of directed relations.
+    dict
+        Dictionary of directed relations.
+    dict
+        Dictionary of relations to verbs.
     """
     nlp = spacy.load("en_core_web_lg")
     subjects = {}
@@ -202,6 +216,12 @@ def get_directed_relations(
                             )
                 subject_text = current_subject.text
 
+                # Search for subject compounds
+                subject_compound = search_for_compound(
+                    word=current_subject,
+                    verbose=verbose,
+                )
+
                 # Start searching for objects.
                 for child in root.children:
                     # Search for indirect objects through the dative dependency.
@@ -221,27 +241,27 @@ def get_directed_relations(
                                         grandchild, negative_words, verbose=verbose
                                     )
                                 )
-                                if check_whether_to_add_relation(
+                                object_compound = search_for_compound(
+                                    word=grandchild,
+                                    verbose=verbose,
+                                )
+                                n_added_relations = add_all_found_relations(
+                                    directed_relations,
+                                    relations_to_verbs,
+                                    root.text,
                                     subject_text,
                                     grandchild.text,
                                     top_n_words,
                                     subject_negative_determiner,
                                     object_negative_determiner,
                                     verb_negative_adverb,
+                                    subject_compound,
+                                    object_compound,
+                                    only_compounds,
                                     get_all_one_directional=get_all_one_directional,
-                                ):
-                                    add_directed_relation(
-                                        directed_relations,
-                                        relations_to_verbs,
-                                        root.text.lower(),
-                                        subject_text.lower(),
-                                        grandchild.text.lower(),
-                                        subject_negative_determiner,
-                                        verb_negative_adverb,
-                                        object_negative_determiner,
-                                        verbose=verbose,
-                                    )
-                                    n_extracted_relations += 1
+                                    verbose=verbose,
+                                )
+                                n_extracted_relations += n_added_relations
 
                     # Search for indirect objects through the prep dependency.
                     if child.dep_ in ["prep"]:
@@ -258,27 +278,27 @@ def get_directed_relations(
                                         grandchild, negative_words, verbose=verbose
                                     )
                                 )
-                                if check_whether_to_add_relation(
+                                object_compound = search_for_compound(
+                                    word=grandchild,
+                                    verbose=verbose,
+                                )
+                                n_added_relations = add_all_found_relations(
+                                    directed_relations,
+                                    relations_to_verbs,
+                                    root.text,
                                     subject_text,
                                     grandchild.text,
                                     top_n_words,
                                     subject_negative_determiner,
                                     object_negative_determiner,
                                     verb_negative_adverb,
+                                    subject_compound,
+                                    object_compound,
+                                    only_compounds,
                                     get_all_one_directional=get_all_one_directional,
-                                ):
-                                    add_directed_relation(
-                                        directed_relations,
-                                        relations_to_verbs,
-                                        root.text.lower(),
-                                        subject_text.lower(),
-                                        grandchild.text.lower(),
-                                        subject_negative_determiner,
-                                        verb_negative_adverb,
-                                        object_negative_determiner,
-                                        verbose=verbose,
-                                    )
-                                    n_extracted_relations += 1
+                                    verbose=verbose,
+                                )
+                                n_extracted_relations += n_added_relations
                                 # Continue searching for objects through conj and prep dependencies.
                                 n_extracted_relations = search_objects_through_conj_prep_dependencies(
                                     grandchild,
@@ -291,6 +311,9 @@ def get_directed_relations(
                                     relations_to_verbs,
                                     subject_negative_determiner,
                                     verb_negative_adverb,
+                                    subject_compound,
+                                    object_compound,
+                                    only_compounds,
                                     n_extracted_relations,
                                     get_all_one_directional,
                                     verbose,
@@ -310,27 +333,27 @@ def get_directed_relations(
                                 child, negative_words, verbose=verbose
                             )
                         )
-                        if check_whether_to_add_relation(
+                        object_compound = search_for_compound(
+                            word=child,
+                            verbose=verbose,
+                        )
+                        n_added_relations = add_all_found_relations(
+                            directed_relations,
+                            relations_to_verbs,
+                            root.text,
                             subject_text,
                             child.text,
                             top_n_words,
                             subject_negative_determiner,
                             object_negative_determiner,
                             verb_negative_adverb,
+                            subject_compound,
+                            object_compound,
+                            only_compounds,
                             get_all_one_directional=get_all_one_directional,
-                        ):
-                            add_directed_relation(
-                                directed_relations,
-                                relations_to_verbs,
-                                root.text.lower(),
-                                subject_text.lower(),
-                                child.text.lower(),
-                                subject_negative_determiner,
-                                verb_negative_adverb,
-                                object_negative_determiner,
-                                verbose=verbose,
-                            )
-                            n_extracted_relations += 1
+                            verbose=verbose,
+                        )
+                        n_extracted_relations += n_added_relations
 
                         # Continue searching for objects through conj and prep dependencies.
                         n_extracted_relations = search_objects_through_conj_prep_dependencies(
@@ -344,6 +367,9 @@ def get_directed_relations(
                             relations_to_verbs,
                             subject_negative_determiner,
                             verb_negative_adverb,
+                            subject_compound,
+                            object_compound,
+                            only_compounds,
                             n_extracted_relations,
                             get_all_one_directional,
                             verbose,
@@ -390,10 +416,14 @@ def search_objects_through_conj_prep_dependencies(
         relations_to_verbs: dict,
         subject_negative_determiner: bool,
         verb_negative_adverb: bool,
+        subject_compound: str,
+        object_compound: str,
+        only_compounds: bool,
         n_extracted_relations: int,
         get_all_one_directional: bool,
         verbose: bool=False,
 ):
+    """Search for objects through conj and prep dependencies and add relations if found."""
     for child in object.children:
         if child.dep_ in ["conj"]:
             # print("object: ", grandchild.text)
@@ -406,27 +436,27 @@ def search_objects_through_conj_prep_dependencies(
                     child, negative_words, verbose=verbose
                 )
             )
-            if check_whether_to_add_relation(
+            object_compound = search_for_compound(
+                word=child,
+                verbose=verbose,
+            )
+            n_added_relations = add_all_found_relations(
+                directed_relations,
+                relations_to_verbs,
+                verb_text,
                 subject_text,
                 child.text,
                 top_n_words,
                 subject_negative_determiner,
                 object_negative_determiner,
                 verb_negative_adverb,
+                subject_compound,
+                object_compound,
+                only_compounds,
                 get_all_one_directional=get_all_one_directional,
-            ):
-                add_directed_relation(
-                    directed_relations,
-                    relations_to_verbs,
-                    verb_text.lower(),
-                    subject_text.lower(),
-                    child.text.lower(),
-                    subject_negative_determiner,
-                    verb_negative_adverb,
-                    object_negative_determiner,
-                    verbose=verbose,
-                )
-                n_extracted_relations += 1
+                verbose=verbose,
+            )
+            n_extracted_relations += n_added_relations
 
         # Continue searching for objects through the prep dependency.
         if child.dep_ in ["prep"]:
@@ -443,27 +473,27 @@ def search_objects_through_conj_prep_dependencies(
                             grandchild, negative_words, verbose=verbose
                         )
                     )
-                    if check_whether_to_add_relation(
+                    object_compound = search_for_compound(
+                        word=grandchild,
+                        verbose=verbose,
+                    )
+                    n_added_relations = add_all_found_relations(
+                        directed_relations,
+                        relations_to_verbs,
+                        verb_text,
                         subject_text,
                         grandchild.text,
                         top_n_words,
                         subject_negative_determiner,
                         object_negative_determiner,
                         verb_negative_adverb,
+                        subject_compound,
+                        object_compound,
+                        only_compounds,
                         get_all_one_directional=get_all_one_directional,
-                    ):
-                        add_directed_relation(
-                            directed_relations,
-                            relations_to_verbs,
-                            verb_text.lower(),
-                            subject_text.lower(),
-                            grandchild.text.lower(),
-                            subject_negative_determiner,
-                            verb_negative_adverb,
-                            object_negative_determiner,
-                            verbose=verbose,
-                        )
-                        n_extracted_relations += 1
+                        verbose=verbose,
+                    )
+                    n_extracted_relations += n_added_relations
     return n_extracted_relations
 
 
@@ -493,11 +523,8 @@ def add_directed_relation(
     directed_relations: dict,
     relations_to_verbs: dict,
     verb: str,
-    subject: str,
-    object: str,
-    subject_negative_determiner: bool = False,
-    object_negative_determiner: bool = False,
-    verb_negative_adverb: bool = False,
+    superior_word: str,
+    inferior_word: str,
     verbose: bool = False,
 ):
     """Adds a directed relation to the set of directed relations.
@@ -505,94 +532,185 @@ def add_directed_relation(
     Parameters
     ----------
     directed_relations : dict
-        Dictionary of directed relations. Key is the (subject, object) tuple, value is the number of relations.
+        Dictionary of directed relations. 
     relations_to_verbs : dict
-        Dictionary of relations to verbs. Key is the (subject, object) tuple, value is a list of verbs.
+        Dictionary of relations to verbs.
     verb : str
-        Verb of the relation.
-    subject : str
-        Subject of the relation.
-    object : str
-        Object of the relation.
-    subject_negative_determiner : bool, optional
-        Whether the subject has a negative determiner, by default False.
-    object_negative_determiner : bool, optional
-        Whether the object has a negative determiner, by default False.
-    verb_negative_adverb : bool, optional
-        Whether the verb has a negative adverb, by default False.
+        The verb of the relation.
+    superior_word : str
+        The superior word of the relation.
+    inferior_word : str
+        The inferior word of the relation.
     verbose : bool, optional
-        Whether to print debug information, by default False.
+        Whether to print the relation, by default False.
     """
-    revert_order = (
-        subject_negative_determiner + verb_negative_adverb + object_negative_determiner
-    ) % 2 == 1
-    if revert_order:
-        if (object, subject) in directed_relations:
-            directed_relations[(object, subject)] += 1
-            relations_to_verbs[(object, subject)].append(verb)
-        else:
-            directed_relations[(object, subject)] = 1
-            relations_to_verbs[(object, subject)] = [verb]
-        if verbose:
-            print("Inverting order of relation.")
-            print("Adding relation: '", object, "' -> '", subject, "'")
+    if (superior_word, inferior_word) in directed_relations:
+        directed_relations[(superior_word, inferior_word)] += 1
+        relations_to_verbs[(superior_word, inferior_word)].append(verb)
     else:
-        if (subject, object) in directed_relations:
-            directed_relations[(subject, object)] += 1
-            relations_to_verbs[(subject, object)].append(verb)
-        else:
-            directed_relations[(subject, object)] = 1
-            relations_to_verbs[(subject, object)] = [verb]
-        if verbose:
-            print("Adding relation: '", subject, "' -> '", object, "'")
+        directed_relations[(superior_word, inferior_word)] = 1
+        relations_to_verbs[(superior_word, inferior_word)] = [verb]
+    if verbose:
+        print("Adding relation: '", superior_word, "' -> '", inferior_word, "'")
 
-def check_whether_to_add_relation(
+
+def add_all_found_relations(
+    directed_relations: dict,
+    relations_to_verbs: dict,
+    verb_text: str,
     subject_text: str,
     object_text: str,
     top_n_words: list,
     subject_negative_determiner: bool,
     object_negative_determiner: bool,
     verb_negative_adverb: bool,
+    subject_compound: str,
+    object_compound: str,
+    only_compounds: bool,
     get_all_one_directional: bool,
+    verbose: bool = False,
 ):
-    """Check whether to add a relation between the subject and the object.
+    """Check which relations should be added to the set of directed relations and add them.
 
     Parameters
     ----------
+    directed_relations : dict
+        Dictionary of directed relations. Key is the (subject, object) tuple, value is the number of relations.
+    relations_to_verbs : dict
+        Dictionary of relations to verbs. Key is the (subject, object) tuple, value is a list of verbs.
+    verb_text : str
+        Verb of the relation.
     subject_text : str
-        The subject of the relation.
+        Subject of the relation.
     object_text : str
-        The object of the relation.
+        Object of the relation.
     top_n_words : list
-        The top n words.
+        List of top n words.
     subject_negative_determiner : bool
         Whether the subject has a negative determiner.
     object_negative_determiner : bool
         Whether the object has a negative determiner.
     verb_negative_adverb : bool
         Whether the verb has a negative adverb.
+    subject_compound : str
+        Subject compound. If there's no compound, this is None.
+    object_compound : str
+        Object compound. If there's no compound, this is None.
+    only_compounds : bool
+        Whether to only create relations with compounds (if they exist).
     get_all_one_directional : bool
-        Whether to get all one directional relations.
-
+        Whether to get all one directional relations, i.e. to not check whether inferior
+        words are in top_n_words.
+    verbose : bool, optional
+        Whether to print debug information, by default False.
+    
     Returns
     -------
-    bool
-        Whether to add the relation.
+    int
+        The number of added relations.
     """
+    n_added_relations = 0
+
+    # Make text of all words lowercase.
+    subject_text = subject_text.lower()
+    object_text = object_text.lower()
+    verb_text = verb_text.lower()
+
+    if subject_compound is not None:
+        subject_compound = subject_compound.lower()
+    if object_compound is not None:
+        object_compound = object_compound.lower()
+
+    # Get all superior and inferior words.
+    if subject_compound is None:
+        superior_words = [subject_text]
+    else:
+        if only_compounds:
+            superior_words = [subject_compound + ' ' + subject_text]
+        else:
+            superior_words = [subject_text, subject_compound + ' ' + subject_text]
+    
+    if object_compound is None:
+        inferior_words = [object_text]
+    else:
+        if only_compounds:
+            inferior_words = [object_compound + ' ' + object_text]
+        else:
+            inferior_words = [object_text, object_compound + ' ' + object_text]
+
+
+    # Check whether to revert order of relation.
     revert_order = (
         subject_negative_determiner + verb_negative_adverb + object_negative_determiner
     ) % 2 == 1
 
-    if subject_text.lower() != object_text.lower():
-        if get_all_one_directional:
-            if (not revert_order and subject_text.lower() in top_n_words) or (
-                revert_order and object_text.lower() in top_n_words
-            ):
-                return True
-        else:
-            if subject_text.lower() in top_n_words and object_text.lower() in top_n_words:
-                return True
-    return False
+    # If we revert order, we swap inferior and superior words.
+    if revert_order:
+        if verbose:
+            print("Reverting order of relation.")
+        superior_words, inferior_words = inferior_words, superior_words
+    
+    # Add relations in case of adding all one directional relations.
+    if get_all_one_directional=='lower':
+        for superior_word in superior_words:
+            if superior_word in top_n_words:
+                for inferior_word in inferior_words:
+                    add_directed_relation(
+                        directed_relations,
+                        relations_to_verbs,
+                        verb_text,
+                        superior_word,
+                        inferior_word,
+                        verbose=verbose,
+                    )
+                    n_added_relations += 1
+    # Add relations in case of adding all one directional relations.
+    elif get_all_one_directional=='higher':
+        for superior_word in superior_words:
+            for inferior_word in inferior_words:
+                if inferior_word in top_n_words:
+                    add_directed_relation(
+                        directed_relations,
+                        relations_to_verbs,
+                        verb_text,
+                        superior_word,
+                        inferior_word,
+                        verbose=verbose,
+                    )
+                    n_added_relations += 1
+    # If we're not adding all one directional, we need to check 
+    # that inferior word is also in top n words.
+    else:
+        for superior_word in superior_words:
+            if superior_word in top_n_words:
+                for inferior_word in inferior_words:
+                    if inferior_word in top_n_words:
+                        add_directed_relation(
+                            directed_relations,
+                            relations_to_verbs,
+                            verb_text,
+                            superior_word,
+                            inferior_word,
+                            verbose=verbose,
+                        )
+                        n_added_relations += 1
+    return n_added_relations
+
+
+def search_for_compound(
+    word,
+    verbose: bool=False,
+):
+    found_compound = None
+    for child in word.children:
+        if child.dep_ in ["compound", "amod"]:
+            if verbose:
+                print("compound: ", child.text)
+            if found_compound is not None and verbose:
+                print("Multiple compounds found for word: ", word.text)
+                print("Compunds: ", found_compound, ", ", child.text)
+            found_compound = child.text
+    return found_compound
 
 
 def order_directed_relations(

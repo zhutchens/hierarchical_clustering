@@ -161,6 +161,30 @@ def better_get_tf_for_documents(documents, sortby="tf", skip_stopwords: bool = F
             tf.loc[tf.word.isin([word_lower]), "tf"] += word_counts[word] / n_words
             tf.loc[tf.word.isin([word_lower]), "tc"] += word_counts[word]
 
+    # Include bigrams
+    for document in documents:
+        bigrams = Counter(nltk.bigrams(re.findall(r"\w+", document)))
+        
+        for bigram in bigrams:
+            bigram_lower = " ".join([word.lower() for word in bigram])
+            if (
+                bigram_lower not in tf["word"].values 
+                and bigram_lower.split(" ")[0] not in stopwords_set
+                and bigram_lower.split(" ")[1] not in stopwords_set
+            ):
+                row = {}
+                row["word"] = [bigram_lower]
+                row["tf"] = [bigrams[bigram] / n_words]
+                row["tc"] = bigrams[bigram]
+                row_df = pd.DataFrame(row)
+                tf = pd.concat([tf, row_df], ignore_index=True)
+            elif (
+                bigram_lower.split(" ")[0] not in stopwords_set
+                and bigram_lower.split(" ")[1] not in stopwords_set
+            ):
+                tf.loc[tf.word.isin([bigram_lower]), "tf"] += bigrams[bigram] / n_words
+                tf.loc[tf.word.isin([bigram_lower]), "tc"] += bigrams[bigram]
+
     tf = tf.sort_values(by=sortby, ascending=False)
     tf = tf.reset_index(drop=True)
     return tf
@@ -183,6 +207,7 @@ def get_tf_for_documents(documents, sortby="tf", skip_stopwords: bool = False):
     pd.DataFrame
         A DataFrame with the term frequency for each word in the documents.
     """
+    raise DeprecationWarning("Use better_get_tf_for_documents instead.")
     tf = pd.DataFrame(columns=["word", "tc", "tf"])
 
     if skip_stopwords:
@@ -247,16 +272,26 @@ def get_idf_for_documents(documents, sortby="idf", skip_stopwords: bool = False)
         stopwords_set = set()
 
     # Get all_verse_words
-    all_verse_words = []
-    for verse in documents:
-        verse_words = re.findall(r"\w+", verse)
-        for i in range(len(verse_words)):
-            verse_words[i] = verse_words[i].lower()
-        all_verse_words.append(set(verse_words))
+    terms_per_document = []
+    for document in documents:
+        document_terms = set()
+        document_words = re.findall(r"\w+", document)
+        for i in range(len(document_words)):
+            document_words[i] = document_words[i].lower()
+        document_terms.update(document_words)
 
-    for verse in documents:
-        verse_words = re.findall(r"\w+", verse)
-        for word in verse_words:
+        document_bigrams = nltk.bigrams(re.findall(r"\w+", document))
+        for bigram in document_bigrams:
+            bigram = " ".join(bigram)
+            bigram = bigram.lower()
+            document_terms.add(bigram)
+        document_terms.update(document_bigrams)
+        
+        terms_per_document.append(document_terms)
+
+    for document in documents:
+        document_words = re.findall(r"\w+", document)
+        for word in document_words:
             word = word.lower()
             if word not in idf["word"].values and word not in stopwords_set:
                 row = {}
@@ -264,14 +299,38 @@ def get_idf_for_documents(documents, sortby="idf", skip_stopwords: bool = False)
                 row["idf"] = math.log(
                     N_documents
                     / len(
-                        [True for verse_words in all_verse_words if word in verse_words]
+                        [True for document_terms in terms_per_document if word in document_terms]
                     )
                 )
                 row["dc"] = len(
-                    [True for verse_words in all_verse_words if word in verse_words]
+                    [True for document_terms in terms_per_document if word in document_terms]
                 )
                 row_df = pd.DataFrame(row)
                 idf = pd.concat([idf, row_df], ignore_index=True)
+
+        document_bigrams = nltk.bigrams(re.findall(r"\w+", document))
+        for bigram in document_bigrams:
+            bigram = " ".join(bigram)
+            bigram = bigram.lower()
+            if (
+                bigram not in idf["word"].values 
+                and bigram.split(" ")[0] not in stopwords_set 
+                and bigram.split(" ")[1] not in stopwords_set
+            ):
+                row = {}
+                row["word"] = [bigram]
+                row["idf"] = math.log(
+                    N_documents
+                    / len(
+                        [True for document_terms in terms_per_document if bigram in document_terms]
+                    )
+                )
+                row["dc"] = len(
+                    [True for document_terms in terms_per_document if bigram in document_terms]
+                )
+                row_df = pd.DataFrame(row)
+                idf = pd.concat([idf, row_df], ignore_index=True)
+
     idf = idf.sort_values(by=sortby, ascending=False)
     idf = idf.reset_index(drop=True)
     return idf
@@ -442,13 +501,27 @@ def get_word_types_with_tf_idf(
 
     word_types = categorize_words(verses, skip_stopwords=skip_stopwords)
 
-    # Create a word_type column in tf_idf, if the word is not in word_types, then it is nan
-    word_type_column = {
-        "word_type": [
-            word_types[word] if word in word_types else np.nan
-            for word in tf_idf["word"].values
-        ]
-    }
+    word_type_list = []
+    for word in tf_idf["word"].values:
+        # If word is in word types (not bigram) just add the word type
+        if word in word_types:
+            word_type_list.append(word_types[word])
+        # If the word is a bigram, then add word types of both words
+        elif " " in word and word.split(" ")[0] in word_types and word.split(" ")[1] in word_types:
+            try:
+                word_type_list.append(
+                    {
+                        key: word_types[word.split(" ")[0]].get(key, 0) + word_types[word.split(" ")[1]].get(key, 0)
+                        for key in word_types[word.split(" ")[0]].keys() | word_types[word.split(" ")[1]].keys()
+                    }
+                )
+            except:
+                breakpoint()
+        # If the word is not in word types, then add nan
+        else:
+            word_type_list.append(np.nan)
+
+    word_type_column = {"word_type": word_type_list}
     word_type_df = pd.DataFrame(word_type_column)
     tf_idf_word_types = pd.concat([tf_idf, word_type_df], axis=1)
 
