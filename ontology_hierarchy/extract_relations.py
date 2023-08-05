@@ -775,7 +775,7 @@ def order_directed_relations(
     # TODO not really needed I think... (or just breaks things actually)
     for word in superior_words:
         if word not in tf_idf_pre_filtering["word"].values:
-            if len(word.split(" "))>1 and all(
+            if len(word.split(" ")) > 1 and all(
                 word in tf_idf_pre_filtering["word"].values for word in word.split(" ")
             ):
                 continue

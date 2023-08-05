@@ -318,11 +318,11 @@ if use_key_terms:
         tf_idf_word_types=tf_idf_pre_filtering,
         verbose=True,
     )
-    #current_level_words.append("dàodé jīng") #TODO: Remove this.
+    # current_level_words.append("dàodé jīng") #TODO: Remove this.
 else:
     raise NotImplementedError("Not implemented yet.")
     # Specify the number of top words to use.
-    n = max(50, len(chosen_chapters)*5)
+    n = max(50, len(chosen_chapters) * 5)
     current_level_words = tf_idf_pre_filtering.head(n)["word"].values
 
 # Create a list of all verses of the chosen books.
@@ -354,7 +354,12 @@ ordered_directed_relations = order_directed_relations(
 for relation in ordered_directed_relations:
     if relation[0] in current_level_words and relation[1] in current_level_words:
         current_level_words.remove(relation[1])
-        print("Removing ", relation[1], " from current_level_words, it will be a child of ", relation[0])
+        print(
+            "Removing ",
+            relation[1],
+            " from current_level_words, it will be a child of ",
+            relation[0],
+        )
 
 
 for current_level in range(chosen_hierarchy_depth):
@@ -368,37 +373,42 @@ for current_level in range(chosen_hierarchy_depth):
         top_n_words=current_level_words,
         all_verses=all_verses,
         verbose=False,
-        get_all_one_directional='lower',
+        get_all_one_directional="lower",
         only_compounds=only_compounds,
     )
     print("All children: ", [relation[1] for relation in directed_relations])
-    
+
     # Filter out the relations whose children is not in tf_idf_pre_filtering
     # and it has not been used already, but print them out first.
     children_to_remove_1 = [
-        key[1] for key, _ in directed_relations.items()
+        key[1]
+        for key, _ in directed_relations.items()
         if key[1] not in tf_idf_pre_filtering["word"].values
     ]
     # Keep the bigrams and trigrams which are not in tf_idf_pre_filtering but
     # all of their words are in tf_idf_pre_filtering.
     children_to_remove_1 = [
-        child for child in children_to_remove_1
-        if not (len(child.split(" ")) > 1 and
-                all(word in tf_idf_pre_filtering["word"].values for word in child.split(" ")))
+        child
+        for child in children_to_remove_1
+        if not (
+            len(child.split(" ")) > 1
+            and all(
+                word in tf_idf_pre_filtering["word"].values for word in child.split(" ")
+            )
+        )
     ]
     print("Children to remove due to tf_idf_pre_filtering: ", children_to_remove_1)
-    
+
     children_to_remove_2 = [
-        key[1] for key, _ in directed_relations.items()
-        if key[1] in used_words
+        key[1] for key, _ in directed_relations.items() if key[1] in used_words
     ]
     print("Children to remove due to used words: ", children_to_remove_2)
 
     directed_relations = {
-        key: value for key, value in directed_relations.items()
+        key: value
+        for key, value in directed_relations.items()
         if key[1] not in children_to_remove_1 and key[1] not in children_to_remove_2
     }
-
 
     # Order the directed relations.
     ordered_directed_relations = order_directed_relations(
@@ -407,7 +417,7 @@ for current_level in range(chosen_hierarchy_depth):
         order_by="product",
         include_ordering_wrt_occurences=True,
         verbose=False,
-    )   
+    )
 
     # Constrain at most chosen_hierarchy_max_width relations per key term.
     if chosen_hierarchy_max_width is not None:
@@ -445,6 +455,10 @@ ontology_hierarchy, words_with_parents = construct_ontology_hierarchy(
 draw_hierarchy_tree_from_ontology(
     ontological_hierarchy=ontology_hierarchy,
     relations_to_verbs=all_relations_to_verbs,
-    title="Theology reconsidered topic modeling cluster " + str(chosen_cluster) + " with " + str(len(chosen_chapters)) + " chapters",
+    title="Theology reconsidered topic modeling cluster "
+    + str(chosen_cluster)
+    + " with "
+    + str(len(chosen_chapters))
+    + " chapters",
     topic_modelling_chapters=chapter_titles,
 )
