@@ -164,11 +164,11 @@ def better_get_tf_for_documents(documents, sortby="tf", skip_stopwords: bool = F
     # Include bigrams
     for document in documents:
         bigrams = Counter(nltk.bigrams(re.findall(r"\w+", document)))
-        
+
         for bigram in bigrams:
             bigram_lower = " ".join([word.lower() for word in bigram])
             if (
-                bigram_lower not in tf["word"].values 
+                bigram_lower not in tf["word"].values
                 and bigram_lower.split(" ")[0] not in stopwords_set
                 and bigram_lower.split(" ")[1] not in stopwords_set
             ):
@@ -184,6 +184,34 @@ def better_get_tf_for_documents(documents, sortby="tf", skip_stopwords: bool = F
             ):
                 tf.loc[tf.word.isin([bigram_lower]), "tf"] += bigrams[bigram] / n_words
                 tf.loc[tf.word.isin([bigram_lower]), "tc"] += bigrams[bigram]
+
+    # Include trigrams
+    for document in documents:
+        trigrams = Counter(nltk.trigrams(re.findall(r"\w+", document)))
+
+        for trigram in trigrams:
+            trigram_lower = " ".join([word.lower() for word in trigram])
+            if (
+                trigram_lower not in tf["word"].values
+                and trigram_lower.split(" ")[0] not in stopwords_set
+                and trigram_lower.split(" ")[1] not in stopwords_set
+                and trigram_lower.split(" ")[2] not in stopwords_set
+            ):
+                row = {}
+                row["word"] = [trigram_lower]
+                row["tf"] = [trigrams[trigram] / n_words]
+                row["tc"] = trigrams[trigram]
+                row_df = pd.DataFrame(row)
+                tf = pd.concat([tf, row_df], ignore_index=True)
+            elif (
+                trigram_lower.split(" ")[0] not in stopwords_set
+                and trigram_lower.split(" ")[1] not in stopwords_set
+                and trigram_lower.split(" ")[2] not in stopwords_set
+            ):
+                tf.loc[tf.word.isin([trigram_lower]), "tf"] += (
+                    trigrams[trigram] / n_words
+                )
+                tf.loc[tf.word.isin([trigram_lower]), "tc"] += trigrams[trigram]
 
     tf = tf.sort_values(by=sortby, ascending=False)
     tf = tf.reset_index(drop=True)
@@ -286,7 +314,14 @@ def get_idf_for_documents(documents, sortby="idf", skip_stopwords: bool = False)
             bigram = bigram.lower()
             document_terms.add(bigram)
         document_terms.update(document_bigrams)
-        
+
+        document_trigrams = nltk.trigrams(re.findall(r"\w+", document))
+        for trigram in document_trigrams:
+            trigram = " ".join(trigram)
+            trigram = trigram.lower()
+            document_terms.add(trigram)
+        document_terms.update(document_trigrams)
+
         terms_per_document.append(document_terms)
 
     for document in documents:
@@ -299,11 +334,19 @@ def get_idf_for_documents(documents, sortby="idf", skip_stopwords: bool = False)
                 row["idf"] = math.log(
                     N_documents
                     / len(
-                        [True for document_terms in terms_per_document if word in document_terms]
+                        [
+                            True
+                            for document_terms in terms_per_document
+                            if word in document_terms
+                        ]
                     )
                 )
                 row["dc"] = len(
-                    [True for document_terms in terms_per_document if word in document_terms]
+                    [
+                        True
+                        for document_terms in terms_per_document
+                        if word in document_terms
+                    ]
                 )
                 row_df = pd.DataFrame(row)
                 idf = pd.concat([idf, row_df], ignore_index=True)
@@ -313,8 +356,8 @@ def get_idf_for_documents(documents, sortby="idf", skip_stopwords: bool = False)
             bigram = " ".join(bigram)
             bigram = bigram.lower()
             if (
-                bigram not in idf["word"].values 
-                and bigram.split(" ")[0] not in stopwords_set 
+                bigram not in idf["word"].values
+                and bigram.split(" ")[0] not in stopwords_set
                 and bigram.split(" ")[1] not in stopwords_set
             ):
                 row = {}
@@ -322,11 +365,51 @@ def get_idf_for_documents(documents, sortby="idf", skip_stopwords: bool = False)
                 row["idf"] = math.log(
                     N_documents
                     / len(
-                        [True for document_terms in terms_per_document if bigram in document_terms]
+                        [
+                            True
+                            for document_terms in terms_per_document
+                            if bigram in document_terms
+                        ]
                     )
                 )
                 row["dc"] = len(
-                    [True for document_terms in terms_per_document if bigram in document_terms]
+                    [
+                        True
+                        for document_terms in terms_per_document
+                        if bigram in document_terms
+                    ]
+                )
+                row_df = pd.DataFrame(row)
+                idf = pd.concat([idf, row_df], ignore_index=True)
+
+        document_trigrams = nltk.trigrams(re.findall(r"\w+", document))
+        for trigram in document_trigrams:
+            trigram = " ".join(trigram)
+            trigram = trigram.lower()
+            if (
+                trigram not in idf["word"].values
+                and trigram.split(" ")[0] not in stopwords_set
+                and trigram.split(" ")[1] not in stopwords_set
+                and trigram.split(" ")[2] not in stopwords_set
+            ):
+                row = {}
+                row["word"] = [trigram]
+                row["idf"] = math.log(
+                    N_documents
+                    / len(
+                        [
+                            True
+                            for document_terms in terms_per_document
+                            if trigram in document_terms
+                        ]
+                    )
+                )
+                row["dc"] = len(
+                    [
+                        True
+                        for document_terms in terms_per_document
+                        if trigram in document_terms
+                    ]
                 )
                 row_df = pd.DataFrame(row)
                 idf = pd.concat([idf, row_df], ignore_index=True)
@@ -507,18 +590,41 @@ def get_word_types_with_tf_idf(
         if word in word_types:
             word_type_list.append(word_types[word])
         # If the word is a bigram, then add word types of both words
-        elif " " in word and word.split(" ")[0] in word_types and word.split(" ")[1] in word_types:
-            try:
-                word_type_list.append(
-                    {
-                        key: word_types[word.split(" ")[0]].get(key, 0) + word_types[word.split(" ")[1]].get(key, 0)
-                        for key in word_types[word.split(" ")[0]].keys() | word_types[word.split(" ")[1]].keys()
-                    }
-                )
-            except:
-                breakpoint()
+        elif (
+            " " in word
+            and len(word.split(" ")) == 2
+            and word.split(" ")[0] in word_types
+            and word.split(" ")[1] in word_types
+        ):
+            word_type_list.append(
+                {
+                    key: word_types[word.split(" ")[0]].get(key, 0)
+                    + word_types[word.split(" ")[1]].get(key, 0)
+                    for key in word_types[word.split(" ")[0]].keys()
+                    | word_types[word.split(" ")[1]].keys()
+                }
+            )
+        # If the word is a trigram, then add word types of all three words
+        elif (
+            " " in word
+            and len(word.split(" ")) == 3
+            and word.split(" ")[0] in word_types
+            and word.split(" ")[1] in word_types
+            and word.split(" ")[2] in word_types
+        ):
+            word_type_list.append(
+                {
+                    key: word_types[word.split(" ")[0]].get(key, 0)
+                    + word_types[word.split(" ")[1]].get(key, 0)
+                    + word_types[word.split(" ")[2]].get(key, 0)
+                    for key in word_types[word.split(" ")[0]].keys()
+                    | word_types[word.split(" ")[1]].keys()
+                    | word_types[word.split(" ")[2]].keys()
+                }
+            )
         # If the word is not in word types, then add nan
         else:
+            # TODO this might be too strict
             word_type_list.append(np.nan)
 
     word_type_column = {"word_type": word_type_list}
@@ -542,7 +648,9 @@ def get_word_types_with_tf_idf(
 
     if exclude_set:
         if verbose:
-            print("Excluding words with the following word types: {}".format(exclude_set))
+            print(
+                "Excluding words with the following word types: {}".format(exclude_set)
+            )
         # Exclude words if the frequency of the word type from exclude_set is
         # greater than 10% of the total word types of that word
         tf_idf_word_types = tf_idf_word_types[

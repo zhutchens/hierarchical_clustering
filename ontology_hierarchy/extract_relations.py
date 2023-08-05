@@ -27,7 +27,7 @@ def get_directed_relations(
     top_n_words_gender_dictionary: dict
         Dictionary of gender of top_n_words.
     get_all_one_directional : str
-        Can be "lower", "higher" or None. If "lower", all relations to which the 
+        Can be "lower", "higher" or None. If "lower", all relations to which the
         top_n_words are superior are extracted. If "higher", all relations to which
         the top_n_words are inferior are extracted. If None, only relations where
         the between the top_n_words are extracted.
@@ -217,7 +217,7 @@ def get_directed_relations(
                 subject_text = current_subject.text
 
                 # Search for subject compounds
-                subject_compound = search_for_compound(
+                subject_compounds = search_for_compounds(
                     word=current_subject,
                     verbose=verbose,
                 )
@@ -241,7 +241,7 @@ def get_directed_relations(
                                         grandchild, negative_words, verbose=verbose
                                     )
                                 )
-                                object_compound = search_for_compound(
+                                object_compounds = search_for_compounds(
                                     word=grandchild,
                                     verbose=verbose,
                                 )
@@ -255,8 +255,8 @@ def get_directed_relations(
                                     subject_negative_determiner,
                                     object_negative_determiner,
                                     verb_negative_adverb,
-                                    subject_compound,
-                                    object_compound,
+                                    subject_compounds,
+                                    object_compounds,
                                     only_compounds,
                                     get_all_one_directional=get_all_one_directional,
                                     verbose=verbose,
@@ -278,7 +278,7 @@ def get_directed_relations(
                                         grandchild, negative_words, verbose=verbose
                                     )
                                 )
-                                object_compound = search_for_compound(
+                                object_compounds = search_for_compounds(
                                     word=grandchild,
                                     verbose=verbose,
                                 )
@@ -292,33 +292,33 @@ def get_directed_relations(
                                     subject_negative_determiner,
                                     object_negative_determiner,
                                     verb_negative_adverb,
-                                    subject_compound,
-                                    object_compound,
+                                    subject_compounds,
+                                    object_compounds,
                                     only_compounds,
                                     get_all_one_directional=get_all_one_directional,
                                     verbose=verbose,
                                 )
                                 n_extracted_relations += n_added_relations
                                 # Continue searching for objects through conj and prep dependencies.
-                                n_extracted_relations = search_objects_through_conj_prep_dependencies(
-                                    grandchild,
-                                    objects,
-                                    top_n_words,
-                                    subject_text,
-                                    root.text,
-                                    negative_words,
-                                    directed_relations,
-                                    relations_to_verbs,
-                                    subject_negative_determiner,
-                                    verb_negative_adverb,
-                                    subject_compound,
-                                    object_compound,
-                                    only_compounds,
-                                    n_extracted_relations,
-                                    get_all_one_directional,
-                                    verbose,
+                                n_extracted_relations = (
+                                    search_objects_through_conj_prep_dependencies(
+                                        grandchild,
+                                        objects,
+                                        top_n_words,
+                                        subject_text,
+                                        root.text,
+                                        negative_words,
+                                        directed_relations,
+                                        relations_to_verbs,
+                                        subject_negative_determiner,
+                                        verb_negative_adverb,
+                                        subject_compounds,
+                                        only_compounds,
+                                        n_extracted_relations,
+                                        get_all_one_directional,
+                                        verbose,
+                                    )
                                 )
-                                
 
                     # Search for direct objects through the dobj and pobj dependencies.
                     if child.dep_ in ["dobj", "pobj"]:
@@ -333,7 +333,7 @@ def get_directed_relations(
                                 child, negative_words, verbose=verbose
                             )
                         )
-                        object_compound = search_for_compound(
+                        object_compounds = search_for_compounds(
                             word=child,
                             verbose=verbose,
                         )
@@ -347,8 +347,8 @@ def get_directed_relations(
                             subject_negative_determiner,
                             object_negative_determiner,
                             verb_negative_adverb,
-                            subject_compound,
-                            object_compound,
+                            subject_compounds,
+                            object_compounds,
                             only_compounds,
                             get_all_one_directional=get_all_one_directional,
                             verbose=verbose,
@@ -356,23 +356,24 @@ def get_directed_relations(
                         n_extracted_relations += n_added_relations
 
                         # Continue searching for objects through conj and prep dependencies.
-                        n_extracted_relations = search_objects_through_conj_prep_dependencies(
-                            child,
-                            objects,
-                            top_n_words,
-                            subject_text,
-                            root.text,
-                            negative_words,
-                            directed_relations,
-                            relations_to_verbs,
-                            subject_negative_determiner,
-                            verb_negative_adverb,
-                            subject_compound,
-                            object_compound,
-                            only_compounds,
-                            n_extracted_relations,
-                            get_all_one_directional,
-                            verbose,
+                        n_extracted_relations = (
+                            search_objects_through_conj_prep_dependencies(
+                                child,
+                                objects,
+                                top_n_words,
+                                subject_text,
+                                root.text,
+                                negative_words,
+                                directed_relations,
+                                relations_to_verbs,
+                                subject_negative_determiner,
+                                verb_negative_adverb,
+                                subject_compounds,
+                                only_compounds,
+                                n_extracted_relations,
+                                get_all_one_directional,
+                                verbose,
+                            )
                         )
 
     # Create a dataframe with columns words, was_subject, was_object.
@@ -406,22 +407,21 @@ def get_directed_relations(
 
 
 def search_objects_through_conj_prep_dependencies(
-        object: spacy.tokens.token.Token,
-        objects: dict,
-        top_n_words: list,
-        subject_text: str,
-        verb_text: str,
-        negative_words: list,
-        directed_relations: list,
-        relations_to_verbs: dict,
-        subject_negative_determiner: bool,
-        verb_negative_adverb: bool,
-        subject_compound: str,
-        object_compound: str,
-        only_compounds: bool,
-        n_extracted_relations: int,
-        get_all_one_directional: bool,
-        verbose: bool=False,
+    object: spacy.tokens.token.Token,
+    objects: dict,
+    top_n_words: list,
+    subject_text: str,
+    verb_text: str,
+    negative_words: list,
+    directed_relations: list,
+    relations_to_verbs: dict,
+    subject_negative_determiner: bool,
+    verb_negative_adverb: bool,
+    subject_compounds: list,
+    only_compounds: bool,
+    n_extracted_relations: int,
+    get_all_one_directional: bool,
+    verbose: bool = False,
 ):
     """Search for objects through conj and prep dependencies and add relations if found."""
     for child in object.children:
@@ -431,12 +431,10 @@ def search_objects_through_conj_prep_dependencies(
                 objects[child.text] += 1
             else:
                 objects[child.text] = 1
-            object_negative_determiner = (
-                search_for_object_negative_determiner(
-                    child, negative_words, verbose=verbose
-                )
+            object_negative_determiner = search_for_object_negative_determiner(
+                child, negative_words, verbose=verbose
             )
-            object_compound = search_for_compound(
+            object_compounds = search_for_compounds(
                 word=child,
                 verbose=verbose,
             )
@@ -450,8 +448,8 @@ def search_objects_through_conj_prep_dependencies(
                 subject_negative_determiner,
                 object_negative_determiner,
                 verb_negative_adverb,
-                subject_compound,
-                object_compound,
+                subject_compounds,
+                object_compounds,
                 only_compounds,
                 get_all_one_directional=get_all_one_directional,
                 verbose=verbose,
@@ -468,12 +466,10 @@ def search_objects_through_conj_prep_dependencies(
                         objects[grandchild.text] += 1
                     else:
                         objects[grandchild.text] = 1
-                    object_negative_determiner = (
-                        search_for_object_negative_determiner(
-                            grandchild, negative_words, verbose=verbose
-                        )
+                    object_negative_determiner = search_for_object_negative_determiner(
+                        grandchild, negative_words, verbose=verbose
                     )
-                    object_compound = search_for_compound(
+                    object_compounds = search_for_compounds(
                         word=grandchild,
                         verbose=verbose,
                     )
@@ -487,8 +483,8 @@ def search_objects_through_conj_prep_dependencies(
                         subject_negative_determiner,
                         object_negative_determiner,
                         verb_negative_adverb,
-                        subject_compound,
-                        object_compound,
+                        subject_compounds,
+                        object_compounds,
                         only_compounds,
                         get_all_one_directional=get_all_one_directional,
                         verbose=verbose,
@@ -532,7 +528,7 @@ def add_directed_relation(
     Parameters
     ----------
     directed_relations : dict
-        Dictionary of directed relations. 
+        Dictionary of directed relations.
     relations_to_verbs : dict
         Dictionary of relations to verbs.
     verb : str
@@ -544,14 +540,15 @@ def add_directed_relation(
     verbose : bool, optional
         Whether to print the relation, by default False.
     """
-    if (superior_word, inferior_word) in directed_relations:
-        directed_relations[(superior_word, inferior_word)] += 1
-        relations_to_verbs[(superior_word, inferior_word)].append(verb)
-    else:
-        directed_relations[(superior_word, inferior_word)] = 1
-        relations_to_verbs[(superior_word, inferior_word)] = [verb]
-    if verbose:
-        print("Adding relation: '", superior_word, "' -> '", inferior_word, "'")
+    if superior_word != inferior_word:
+        if (superior_word, inferior_word) in directed_relations:
+            directed_relations[(superior_word, inferior_word)] += 1
+            relations_to_verbs[(superior_word, inferior_word)].append(verb)
+        else:
+            directed_relations[(superior_word, inferior_word)] = 1
+            relations_to_verbs[(superior_word, inferior_word)] = [verb]
+        if verbose:
+            print("Adding relation: '", superior_word, "' -> '", inferior_word, "'")
 
 
 def add_all_found_relations(
@@ -564,8 +561,8 @@ def add_all_found_relations(
     subject_negative_determiner: bool,
     object_negative_determiner: bool,
     verb_negative_adverb: bool,
-    subject_compound: str,
-    object_compound: str,
+    subject_compounds: list,
+    object_compounds: list,
     only_compounds: bool,
     get_all_one_directional: bool,
     verbose: bool = False,
@@ -603,7 +600,7 @@ def add_all_found_relations(
         words are in top_n_words.
     verbose : bool, optional
         Whether to print debug information, by default False.
-    
+
     Returns
     -------
     int
@@ -616,28 +613,33 @@ def add_all_found_relations(
     object_text = object_text.lower()
     verb_text = verb_text.lower()
 
-    if subject_compound is not None:
-        subject_compound = subject_compound.lower()
-    if object_compound is not None:
-        object_compound = object_compound.lower()
+    if subject_compounds is not None:
+        subject_compounds = [word.lower() for word in subject_compounds]
+    if object_compounds is not None:
+        object_compounds = [word.lower() for word in object_compounds]
 
     # Get all superior and inferior words.
-    if subject_compound is None:
+    if subject_compounds is None:
         superior_words = [subject_text]
     else:
         if only_compounds:
-            superior_words = [subject_compound + ' ' + subject_text]
+            superior_words = [" ".join(subject_compounds) + " " + subject_text]
         else:
-            superior_words = [subject_text, subject_compound + ' ' + subject_text]
-    
-    if object_compound is None:
+            superior_words = [
+                subject_text,
+                " ".join(subject_compounds) + " " + subject_text,
+            ]
+
+    if object_compounds is None:
         inferior_words = [object_text]
     else:
         if only_compounds:
-            inferior_words = [object_compound + ' ' + object_text]
+            inferior_words = [" ".join(object_compounds) + " " + object_text]
         else:
-            inferior_words = [object_text, object_compound + ' ' + object_text]
-
+            inferior_words = [
+                object_text,
+                " ".join(object_compounds) + " " + object_text,
+            ]
 
     # Check whether to revert order of relation.
     revert_order = (
@@ -649,9 +651,9 @@ def add_all_found_relations(
         if verbose:
             print("Reverting order of relation.")
         superior_words, inferior_words = inferior_words, superior_words
-    
+
     # Add relations in case of adding all one directional relations.
-    if get_all_one_directional=='lower':
+    if get_all_one_directional == "lower":
         for superior_word in superior_words:
             if superior_word in top_n_words:
                 for inferior_word in inferior_words:
@@ -665,7 +667,7 @@ def add_all_found_relations(
                     )
                     n_added_relations += 1
     # Add relations in case of adding all one directional relations.
-    elif get_all_one_directional=='higher':
+    elif get_all_one_directional == "higher":
         for superior_word in superior_words:
             for inferior_word in inferior_words:
                 if inferior_word in top_n_words:
@@ -678,7 +680,7 @@ def add_all_found_relations(
                         verbose=verbose,
                     )
                     n_added_relations += 1
-    # If we're not adding all one directional, we need to check 
+    # If we're not adding all one directional, we need to check
     # that inferior word is also in top n words.
     else:
         for superior_word in superior_words:
@@ -697,20 +699,35 @@ def add_all_found_relations(
     return n_added_relations
 
 
-def search_for_compound(
+def search_for_compounds(
     word,
-    verbose: bool=False,
+    verbose: bool = False,
 ):
-    found_compound = None
+    found_compounds = []
     for child in word.children:
         if child.dep_ in ["compound", "amod"]:
-            if verbose:
-                print("compound: ", child.text)
-            if found_compound is not None and verbose:
-                print("Multiple compounds found for word: ", word.text)
-                print("Compunds: ", found_compound, ", ", child.text)
-            found_compound = child.text
-    return found_compound
+            found_compounds.append(child.text)
+            # Continue through the conjunction dependency.
+            for grandchild in child.children:
+                if grandchild.dep_ == "conj":
+                    found_compounds.append(grandchild.text)
+
+    # If there's any compunds found,
+    # restrict them to last two compounds.
+    if len(found_compounds) > 2:
+        if verbose:
+            print("More than 2 compounds found for word: ", word.text)
+            print("Compunds: ", found_compounds)
+        found_compounds = found_compounds[-2:]
+    # If there's no compounds found,
+    # set found_compounds to None.
+    elif len(found_compounds) == 0:
+        found_compounds = None
+    else:
+        if verbose:
+            print("Compounds: ", found_compounds)
+
+    return found_compounds
 
 
 def order_directed_relations(
@@ -740,21 +757,12 @@ def order_directed_relations(
     """
     ordered_directed_relations = list(directed_relations.keys())
 
-    first_words = list(set([relation[0] for relation in ordered_directed_relations]))
-
-    # Remove a relation if there's the opposite relation with more occurences.
-    for first, second in ordered_directed_relations:
-        if (
-            second,
-            first,
-        ) in ordered_directed_relations and directed_relations[
-            (second, first)
-        ] > directed_relations[(first, second)]:
-            ordered_directed_relations.remove((first, second))
+    superior_words = list(set([relation[0] for relation in ordered_directed_relations]))
+    inferior_words = list(set([relation[1] for relation in ordered_directed_relations]))
 
     # Get the number of relations for each word in which it's superior.
     number_of_relations = {}
-    for word in first_words:
+    for word in superior_words:
         number_of_relations[word] = sum(
             [
                 directed_relations[relation]
@@ -764,74 +772,59 @@ def order_directed_relations(
         )
 
     # Check that first words are occuring in the tf_idf_pre_filtering dataframe.
-    for word in first_words:
+    # TODO not really needed I think... (or just breaks things actually)
+    for word in superior_words:
         if word not in tf_idf_pre_filtering["word"].values:
+            if len(word.split(" "))>1 and all(
+                word in tf_idf_pre_filtering["word"].values for word in word.split(" ")
+            ):
+                continue
             print(
-                f"Warning: word {word} not in tf_idf_pre_filtering dataframe. Removing it from the list of first words.",
+                f"Warning: word {word} not in tf_idf_pre_filtering dataframe. \
+                    Removing it from the list of first words.",
             )
-            first_words.remove(word)
+            superior_words.remove(word)
 
-    # Get tf_idf from the dataframe tf_idf_pre_filtering with columns words and tf_idf.
-    tf_idf_of_words = {}
-    for word in first_words:
-        tf_idf_of_words[word] = tf_idf_pre_filtering[
-            tf_idf_pre_filtering["word"] == word
-        ]["tf_idf"].values[0]
-
-    # Get tf from the dataframe tf_idf_pre_filtering with columns words and tf.
-    tf_of_words = {}
-    for word in first_words:
-        tf_of_words[word] = tf_idf_pre_filtering[tf_idf_pre_filtering["word"] == word][
-            "tf"
-        ].values[0]
-
-    # Order the first words with respect to the number of relations and the tf_idf.
+    # If we need it, extract the tf_idf of the relation words.
     if order_by == "tf_idf":
-        first_words.sort(
-            key=lambda x: number_of_relations[x] * tf_idf_of_words[x], reverse=True
+        measure_dictionary = _extract_tf_or_tf_idf(
+            words=superior_words + inferior_words,
+            tf_idf_pre_filtering=tf_idf_pre_filtering,
+            measure="tf_idf",
         )
-    else:
-        first_words.sort(
-            key=lambda x: number_of_relations[x] * tf_of_words[x], reverse=True
+    elif order_by in ["tf", "product"]:
+        measure_dictionary = _extract_tf_or_tf_idf(
+            words=superior_words + inferior_words,
+            tf_idf_pre_filtering=tf_idf_pre_filtering,
+            measure="tf",
         )
 
-    # Order the relations with respect to the first words.
-    ordered_directed_relations.sort(
-        key=lambda x: first_words.index(x[0]), reverse=False
-    )
-
-    # If there are two relations with same words, keep only the one first in the list.
-    for first, second in ordered_directed_relations:
-        if (
-            second,
-            first,
-        ) in ordered_directed_relations and ordered_directed_relations.index(
-            (second, first)
-        ) > ordered_directed_relations.index(
-            (first, second)
-        ):
-            ordered_directed_relations.remove((second, first))
-
-    if order_by == "tf":
-        first_words.sort(key=lambda x: tf_of_words[x], reverse=True)
-    if order_by == "tf_idf":
-        first_words.sort(key=lambda x: tf_idf_of_words[x], reverse=True)
+    # Order the superior words with respect to the metric.
+    if order_by in ["tf", "tf_idf"]:
+        superior_words.sort(key=lambda x: measure_dictionary[x], reverse=True)
     elif order_by == "number_of_relations":
-        first_words.sort(key=lambda x: number_of_relations[x], reverse=True)
+        superior_words.sort(key=lambda x: number_of_relations[x], reverse=True)
     elif order_by == "product":
-        first_words.sort(
-            key=lambda x: number_of_relations[x] * tf_of_words[x], reverse=True
+        superior_words.sort(
+            key=lambda x: number_of_relations[x] * measure_dictionary[x], reverse=True
         )
+
+    # Order the inferior words with respect to the metric.
+    inferior_words.sort(key=lambda x: measure_dictionary[x], reverse=True)
 
     # Order the relations with respect to the number of occurances of the relation first
-    # so directed_relations[word],
-    # and then with respect to the order of the first word in the first_words list.
+    # (directed_relations[relation]),
+    # then with respect to the order of the first word in the superior_words list
+    # and then with respect to the order of the first word in the inferior_words list.
     if include_ordering_wrt_occurences:
         ordered_directed_relations.sort(
-            key=lambda x: (directed_relations[x], -first_words.index(x[0])),
+            key=lambda x: (
+                directed_relations[x],
+                -superior_words.index(x[0]),
+                -inferior_words.index(x[1]),
+            ),
             reverse=True,
         )
-
         if verbose:
             # Make a dataframe with relations and occurances and print it completely
             occurances_of_directed_relations = [
@@ -849,7 +842,49 @@ def order_directed_relations(
                 print(df)
     else:
         ordered_directed_relations.sort(
-            key=lambda x: first_words.index(x[0]), reverse=False
+            key=lambda x: (superior_words.index(x[0]), inferior_words.index(x[1])),
+            reverse=False,
         )
 
+    # If there are two opposite relations with same words, keep only the one first in the list.
+    for first, second in ordered_directed_relations:
+        if (
+            second,
+            first,
+        ) in ordered_directed_relations and ordered_directed_relations.index(
+            (second, first)
+        ) > ordered_directed_relations.index(
+            (first, second)
+        ):
+            ordered_directed_relations.remove((second, first))
+
     return ordered_directed_relations
+
+
+def _extract_tf_or_tf_idf(
+    words: list,
+    tf_idf_pre_filtering: pd.DataFrame,
+    measure: str,
+):
+    """Extracts the tf or tf_idf values as a dictionary of the words in the list."""
+    result_dictionary = {}
+
+    for word in words:
+        # if the word is in tf_idf_pre_filtering, extract the tf or tf_idf value.
+        if word in tf_idf_pre_filtering["word"].values:
+            result_dictionary[word] = tf_idf_pre_filtering[
+                tf_idf_pre_filtering["word"] == word
+            ][measure].values[0]
+        # if the word is not in tf_idf_pre_filtering, and it's a bigram or trigram,
+        # extract the tf or tf_idf value of the last word.
+        # TODO might be a big assumption.
+        elif len(word.split(" ")) > 1:
+            print("For word", word, "taking the last word.")
+            last_word = word.split(" ")[-1]
+            result_dictionary[word] = tf_idf_pre_filtering[
+                tf_idf_pre_filtering["word"] == last_word
+            ][measure].values[0]
+        else:
+            result_dictionary[word] = 0
+
+    return result_dictionary

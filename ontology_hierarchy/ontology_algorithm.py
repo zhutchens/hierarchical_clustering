@@ -3,7 +3,6 @@ import graphviz
 from IPython.display import display, Image
 
 
-
 def check_for_cycles(lesser_word, higher_word, ontological_hierarchy):
     """Check if adding the word pair (lesser_word, higher_word) to the ontology
     would create a cycle."""
@@ -116,7 +115,7 @@ def draw_hierarchy_tree_from_ontology(
     topic_modelling_chapters: list[str] = None,
 ):
     """Draw the ontology as a tree using Graphviz.
-    
+
     Parameters
     ----------
     ontological_hierarchy : dict
@@ -148,7 +147,7 @@ def draw_hierarchy_tree_from_ontology(
         if title is not None:
             # Put the title together with the chapters in the top of the graph.
             graph.attr(
-                label=f"{title}\n\nChapters:\n" + '\n'.join(topic_modelling_chapters),
+                label=f"{title}\n\nChapters:\n" + "\n".join(topic_modelling_chapters),
                 labelloc="t",
                 labeljust="l",
                 fontname="Calibri Italic",
@@ -157,19 +156,23 @@ def draw_hierarchy_tree_from_ontology(
         else:
             # Put the chapters in the top of the graph.
             graph.attr(
-                label="Chapters:\n" + '\n'.join(topic_modelling_chapters),
+                label="Chapters:\n" + "\n".join(topic_modelling_chapters),
                 labelloc="t",
                 labeljust="l",
                 fontname="Calibri Italic",
                 fontsize="12",
             )
-            
-
 
     if title is not None and topic_modelling_chapters is None:
         # Add title to the top of the graph.
-        graph.attr(label=title, labelloc="t", labeljust="c", fontname="Calibri Italic", fontsize="20")
-        
+        graph.attr(
+            label=title,
+            labelloc="t",
+            labeljust="c",
+            fontname="Calibri Italic",
+            fontsize="20",
+        )
+
     # Create a node for each parent key and add it to the graph.
     for parent in ontological_hierarchy:
         if parent not in graph:
@@ -181,6 +184,8 @@ def draw_hierarchy_tree_from_ontology(
             if child not in graph:
                 graph.node(child, fontname="Calibri Italic", fontsize="12")
             label = ", ".join(list(set(relations_to_verbs[(parent, child)])))
-            graph.edge(parent, child, label=label, fontname="Calibri Italic", fontsize="12")
-    
-    display(Image(graph.pipe(format='png', renderer='cairo')))
+            graph.edge(
+                parent, child, label=label, fontname="Calibri Italic", fontsize="12"
+            )
+
+    display(Image(graph.pipe(format="png", renderer="cairo")))
