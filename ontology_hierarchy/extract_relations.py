@@ -1,5 +1,6 @@
 import pandas as pd
 import spacy
+
 from preprocessing import get_top_30_gender_number_dictionary
 
 
@@ -791,12 +792,14 @@ def order_directed_relations(
             words=superior_words + inferior_words,
             tf_idf_pre_filtering=tf_idf_pre_filtering,
             measure="tf_idf",
+            verbose=verbose,
         )
     elif order_by in ["tf", "product"]:
         measure_dictionary = _extract_tf_or_tf_idf(
             words=superior_words + inferior_words,
             tf_idf_pre_filtering=tf_idf_pre_filtering,
             measure="tf",
+            verbose=verbose,
         )
 
     # Order the superior words with respect to the metric.
@@ -865,6 +868,7 @@ def _extract_tf_or_tf_idf(
     words: list,
     tf_idf_pre_filtering: pd.DataFrame,
     measure: str,
+    verbose: bool = False,
 ):
     """Extracts the tf or tf_idf values as a dictionary of the words in the list."""
     result_dictionary = {}
@@ -879,7 +883,12 @@ def _extract_tf_or_tf_idf(
         # extract the tf or tf_idf value of the last word.
         # TODO might be a big assumption.
         elif len(word.split(" ")) > 1:
-            print("For word", word, "taking the last word.")
+            if verbose:
+                print(
+                    "Instead of using tf_idf of ",
+                    word,
+                    " just using tf_idf of its last word",
+                )
             last_word = word.split(" ")[-1]
             result_dictionary[word] = tf_idf_pre_filtering[
                 tf_idf_pre_filtering["word"] == last_word

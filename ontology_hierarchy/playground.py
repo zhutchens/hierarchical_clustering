@@ -1,22 +1,17 @@
-from preprocessing import (
-    preprocess_kjv,
-    get_word_types_with_tf_idf,
-    get_gospel_top_70_words_dictionary,
-)
-from extract_relations import (
-    get_directed_relations,
-    order_directed_relations,
-)
+import re
+
+from extract_relations import get_directed_relations, order_directed_relations
 from ontology_algorithm import (
     construct_ontology_hierarchy,
-    print_hierarchy_tree_from_ontology,
     draw_hierarchy_tree_from_ontology,
+    print_hierarchy_tree_from_ontology,
 )
-from topic_modeling import (
-    kmeans_tfidf_clustering,
-    filter_topic_modeling_key_terms,
+from preprocessing import (
+    get_gospel_top_70_words_dictionary,
+    get_word_types_with_tf_idf,
+    preprocess_kjv,
 )
-import re
+from topic_modeling import filter_topic_modeling_key_terms, kmeans_tfidf_clustering
 
 # kjv_path = "/Users/zebo/Documents/Freelancing/upwork/Peter_J_Worth_Jr/NLP/hierarchical_clustering/data/t_kjv.csv"
 # kjv_bible_df = preprocess_kjv(

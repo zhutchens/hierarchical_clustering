@@ -1,6 +1,6 @@
-from anytree import Node, RenderTree
 import graphviz
-from IPython.display import display, Image
+from anytree import Node, RenderTree
+from IPython.display import Image, display
 
 
 def check_for_cycles(lesser_word, higher_word, ontological_hierarchy):

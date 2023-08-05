@@ -1,12 +1,12 @@
+import re
+from typing import List
+
 import contractions
 import nltk
 import numpy as np
 import pandas as pd
-import re
-
-from typing import List
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 stop_words = nltk.corpus.stopwords.words("english")
 
