@@ -10,7 +10,7 @@ def construct_topic_modeling_concept_hierarchy(
     chapters: List,
     titles: List,
     sentences_per_chapter: List,
-    num_topics: List,
+    num_topics: int,
     chosen_cluster: int = 0,
     hierarchy_depth: int = 5,
     hierarchy_max_width: int = None,
