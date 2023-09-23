@@ -25,8 +25,18 @@ A simple iterative hierarchy construction algorithm `construct_ontology_hierarch
 
 <img src="ontology_hierarchy_example.png" alt= “” width="30%" height="30%">
 
-## Application examples
-In two notebooks, application of the whole workflow is demonstrated. For both, we use the KJV Bible as the corpus of text:
+Newer visualisation options have been implemented. Notably the `draw_hierarchy_tree_from_ontology`.
 
-- `genesis_ontology.py`: generation of a ontological hierarchy of key terms in Genesis. One can specify the `last_chapter` that will be included in the analysis and `n` as the number of key terms taken from the preprocessing.
+## topic_modeling.py
+Contains the k-means clustering algorithm for topic modeling. Calling `kmeans_tfidf_clustering` with chapters and the number of desired topics will return that many clusters of chapters given.
+
+## integrative_workflow.py
+Integrates the topic modelling and relation extraction modules. Main function `construct_topic_modeling_concept_hierarchy` generates a concept hierarchy given chapters. It calls the topic modeling module to obtain the chapter clusters and key terms per cluster. One can select a cluster for which to generate a concept hierarchy using either key terms of even manually added terms as roots.
+
+## Application examples
+Application of the whole workflow is demonstrated in Jupyter notebooks. For some we use the KJV Bible as the corpus of text and for others the Theology Reconsidered corpus:
+
+- `genesis_ontology_new.py`: generation of a ontological hierarchy of key terms in Genesis. One can specify the `last_chapter` that will be included in the analysis and `n` as the number of key terms taken from the preprocessing.
 - `whole_bible_ontology.ipynb`: generation of an ontological hierarchy of key terms in any set of books of the Bible. The set of books can be specified in the `chosen_books` variable and the number of key terms extraced in the `n` variable.
+- `key_term_tree_bible.ipynb`: generation of an ontological hierarchy using the integrated workflow. The simplest and easiest way of using the workflow with quite some freedom of specifying algorithm details. Crucial function is the `construct_topic_modeling_concept_hierarchy` with the most important inputs `num_topics` and `chosen_cluster`.
+- `theology_reconsidered_ontology.ipynb`: same integrated workflow applied to the Theology Reconsidered corpus.
