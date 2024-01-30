@@ -66,6 +66,9 @@ def kmeans_tfidf_clustering(chapters, num_topics, n_key_terms=None):
     norm_tr_corpus = normalize_corpus(list(chapters))
 
     # Extract tf-idf features.
+
+    # tf-id (term frequency - inverse document frequency)
+    # vectorize raw data
     tfidf_vectorizer = TfidfVectorizer(
         max_features=200000,
         use_idf=True,
@@ -75,6 +78,7 @@ def kmeans_tfidf_clustering(chapters, num_topics, n_key_terms=None):
         stop_words=stop_words,
     )
 
+    # given raw data (document), learn vocabulary and find inverse document frequency. returns sparse matrix of n samples and n features (essentially a 2D array)
     tfidf_matrix = tfidf_vectorizer.fit_transform(norm_tr_corpus)
 
     # Initialize KMeans clustering.
@@ -83,12 +87,16 @@ def kmeans_tfidf_clustering(chapters, num_topics, n_key_terms=None):
     )
 
     # Fit the tf-idf features.
+    # computing KMeans clustering, using the sparse matrix tfidf_matrix (again essentially a 2D array)
+    # parameter is an array like object of shape n samples and n features 
     km_tfidf.fit(tfidf_matrix)
-    # Get the clusters.
+    # Get the clusters. Labels_ are the cluster labels of each data point. Returns array data as a nested Python list 
     km_tfidf_clusters = km_tfidf.labels_.tolist()
 
     # Get the cluster centers.
+    # cluster centers is an ndarray, argsort() is used to sort the array in ascending order and returns the indices that sort the array. [:, ::-1] is essentially used to change the order to descending 
     ordered_centroids = km_tfidf.cluster_centers_.argsort()[:, ::-1]
+    # return feature names in an ndarray 
     feature_names = tfidf_vectorizer.get_feature_names_out()
 
     clusters = {}
@@ -101,11 +109,13 @@ def kmeans_tfidf_clustering(chapters, num_topics, n_key_terms=None):
         cluster_chapter_indices = [
             i for i in range(len(km_tfidf_clusters)) if km_tfidf_clusters[i] == cluster
         ]
+        
         print("Cluster Chapters:", cluster_chapter_indices)
         if n_key_terms is None:
             number_of_key_features = max(50, len(cluster_chapter_indices) * 5)
         else:
             number_of_key_features = n_key_terms
+
         key_features = [
             feature_names[index]
             for index in ordered_centroids[cluster, :number_of_key_features]
