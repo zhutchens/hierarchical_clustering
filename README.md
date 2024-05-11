@@ -1,5 +1,5 @@
 # Original Authors 
-The original authors and repository of this repository can be found at: https://github.com/Doresic/hierarchical_clustering. The original research paper is also available at: https://www.scirp.org/pdf/ijis_2023102015515524.pdf 
+The original authors of this repository can be found at: https://github.com/Doresic/hierarchical_clustering. The original research paper is also available at: https://www.scirp.org/pdf/ijis_2023102015515524.pdf 
 
 
 ## Current Usage
